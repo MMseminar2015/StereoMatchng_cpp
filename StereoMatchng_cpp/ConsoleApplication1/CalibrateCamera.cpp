@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "CalibrateCamera.h"
+#include "FileUtility.h"
 #include <iostream>
 #include <windows.h>
 #include <filesystem>
@@ -13,29 +14,12 @@ const std::string CalibrateCamera::IMGS_PATH = "imgs\\{0:D3}.JPG";
 const float CalibrateCamera::CHESS_SIZE = 23.0f;
 const CvSize CalibrateCamera::patternSize = cvSize(PAT_COL, PAT_ROW);
 
-CalibrateCamera::CalibrateCamera()
-{
-}
-
-
-CalibrateCamera::~CalibrateCamera()
-{
-}
 
 void CalibrateCamera::Calibrate(std::string imgdirpath)
 {
 	// (1)キャリブレーション画像の読み込み
-	//IplImage *srcImg[IMAGE_NUM];
-	//for (int i = 0; i < IMAGE_NUM; i++)
-	//{
-	//	std::string path = IMGS_PATH;// string.Format(IMGS_PATH, i);	//変更必要
-	//	
-	//	const char *pathchar = path.c_str();
-	//	srcImg[i] = cvLoadImage(pathchar, CV_LOAD_IMAGE_COLOR);
-	//}
-
 	std::vector<IplImage*> srcImg;
-	std::vector<std::string> files=GetFilesFromDirectory(imgdirpath, "*");
+	std::vector<std::string> files= FileUtility::GetFilesFromDirectory(imgdirpath, "*");
 	
 	for (int i = 0; i < files.size(); i++)
 	{
@@ -66,7 +50,7 @@ void CalibrateCamera::Calibrate(std::string imgdirpath)
 		cv::cvtColor(cv::cvarrToMat(srcImg[i]), cv::cvarrToMat(srcGray), CV_BGR2GRAY);
 		cv::cornerSubPix(cv::cvarrToMat(srcImg[i]), corners,  cv::Size(3, 3), cv::Size(-1, -1), cv::TermCriteria(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS, 20, 0.03));
 		cv::drawChessboardCorners(cv::cvarrToMat(srcImg[i]), patternSize, corners, found);
-		pCount[i] = corners.size;
+		pCount[i] = corners.size();
 		cvShowImage("Calibration",srcImg[i]);
 		cv::waitKey(100);
 	
@@ -135,35 +119,4 @@ void CalibrateCamera::Calibrate(std::string imgdirpath)
 	//Console.Read();
 }
 
-std::vector<std::string> CalibrateCamera::GetFilesFromDirectory(std::string dirpath, const std::string& filter)
-{
-	WIN32_FIND_DATAA fd;
 
-	std::string ss = dirpath + filter;
-	HANDLE hFind = FindFirstFileA(ss.c_str(), &fd);
-
-	//// 検索失敗
-	//if (hFind == INVALID_HANDLE_VALUE)
-	//{
-	//	throw std::exception("util::Directory::GetFiles failed");
-	//}
-
-	std::vector<std::string> fileList;
-	do
-	{
-		// フォルダは除く
-		if (fd.dwFileAttributes & FILE_ATTRIBUTE_DIRECTORY)
-			continue;
-		// 隠しファイルは除く
-		if (fd.dwFileAttributes & FILE_ATTRIBUTE_HIDDEN)
-			continue;
-
-		fileList.push_back(dirpath+fd.cFileName);
-		std::cout << dirpath+fd.cFileName << std::endl;
-	} while (FindNextFileA(hFind, &fd));
-
-	FindClose(hFind);
-
-	return fileList;
-
-}

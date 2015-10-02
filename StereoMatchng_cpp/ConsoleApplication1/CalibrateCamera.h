@@ -1,13 +1,15 @@
 #pragma once
 
-/************************
-カメラキャリブレーション
-************************/
-
 #include "string.h"
 #include "stdafx.h"
 #include <opencv2\opencv.hpp>
 
+/// <summary>
+/// カメラキャリブレーション
+/// </summary>
+/// <remarks>
+/// http://opencv.jp/sample/camera_calibration.html #calibration
+/// </remarks>
 class CalibrateCamera
 {
 
@@ -23,10 +25,12 @@ public:
 	static const CvSize patternSize;
 
 public:
-	CalibrateCamera();
-	~CalibrateCamera();
+	/// <summary>
+	/// カメラキャリブレーション実行
+	/// </summary>
 	static void Calibrate(std::string imgdirpath);
-	static std::vector<std::string> GetFilesFromDirectory(std::string dirpath, const std::string& filter);
+
+	
 
 };
 

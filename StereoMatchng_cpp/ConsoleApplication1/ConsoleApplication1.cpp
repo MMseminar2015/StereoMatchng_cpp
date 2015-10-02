@@ -2,6 +2,7 @@
 //
 
 #include "stdafx.h"
+#include "FileUtility.h"
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
 #include <iostream>
@@ -16,7 +17,7 @@ int main(int argc, const char* argv[])
 	//cv::waitKey(0);
 	//cv::destroyAllWindows();
 
-	CalibrateCamera::CalibrateCamera::GetFilesFromDirectory("C:\\Users\\Ohara Kazuya\\Documents\\opencv-2.4.10\\build\\x64\\vc12\\lib\\","*.lib");
+	FileUtility::GetFilesFromDirectory("C:\\Users\\Ohara Kazuya\\Documents\\opencv-2.4.10\\build\\x64\\vc12\\lib\\","*.lib");
 
 	getchar();
 	return 0;
