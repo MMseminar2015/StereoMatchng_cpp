@@ -4,6 +4,10 @@
 #include <windows.h>
 #include <filesystem>
 #include <opencv2\opencv.hpp>
+#include "opencv2/core/core.hpp"
+#include "opencv2/calib3d/calib3d.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
+#include "opencv2/highgui/highgui.hpp"
 
 const std::string CalibrateCamera::IMGS_PATH = "imgs\\{0:D3}.JPG";
 const float CalibrateCamera::CHESS_SIZE = 23.0f;
@@ -39,40 +43,37 @@ void CalibrateCamera::Calibrate(std::string imgdirpath)
 	}
 
 
-	//// (3)チェスボード（キャリブレーションパターン）のコーナー検出
-	//int foundNum = 0;
-	//std::vector<CvPoint2D32f> allCorners = std::vector<CvPoint2D32f>();
-	//int pCount[IMAGE_NUM];
-	//using (CvWindow window = new CvWindow("Calibration", WindowMode.AutoSize))
-	//{
-	//	for (int i = 0; i < IMAGE_NUM; i++)
-	//	{
-	//		CvPoint2D32f[] corners;
-	//		bool found = Cv.FindChessboardCorners(srcImg[i], patternSize, out corners);
-	//		Debug.Print("{0:D2}...", i);
-	//		if (found)
-	//		{
-	//			Debug.Print("ok");
-	//			foundNum++;
-	//		}
-	//		else
-	//		{
-	//			Debug.Print("fail");
-	//		}
-	//		// (4)コーナー位置をサブピクセル精度に修正，描画                    
-	//		using (IplImage srcGray = new IplImage(srcImg[i].Size, BitDepth.U8, 1))
-	//		{
-	//			Cv.CvtColor(srcImg[i], srcGray, ColorConversion.BgrToGray);
-	//			Cv.FindCornerSubPix(srcGray, corners, corners.Length, new CvSize(3, 3), new CvSize(-1, -1), new CvTermCriteria(20, 0.03));
-	//			Cv.DrawChessboardCorners(srcImg[i], patternSize, corners, found);
-	//			pCount[i] = corners.Length;
-	//			window.ShowImage(srcImg[i]);
-	//			Cv.WaitKey(100);
-	//		}
-	//		allCorners.AddRange(corners);
-	//	}
-	//}
-	//int allPoints = foundNum * PAT_SIZE;
+	// (3)チェスボード（キャリブレーションパターン）のコーナー検出
+	int foundNum = 0;
+	std::vector<CvPoint2D32f> allCorners = std::vector<CvPoint2D32f>();
+	int pCount[IMAGE_NUM];
+	cvNamedWindow("Calibration", CV_WINDOW_AUTOSIZE);
+	for (int i = 0; i < files.size(); i++)
+	{
+		std::vector<CvPoint2D32f> corners;
+		bool found = cv::findChessboardCorners(cv::cvarrToMat(srcImg[i]), patternSize, corners);
+		if (found)
+		{
+			foundNum++;
+		}
+		else
+		{
+			std::cout << files[i] + " is invalid" << std::endl;
+		}
+		// (4)コーナー位置をサブピクセル精度に修正，描画                    
+		IplImage* srcGray = cvCreateImage(cvSize(srcImg[i]->width, srcImg[i]->height), CV_8U, 1);
+
+		cv::cvtColor(cv::cvarrToMat(srcImg[i]), cv::cvarrToMat(srcGray), CV_BGR2GRAY);
+		cv::cornerSubPix(cv::cvarrToMat(srcImg[i]), corners,  cv::Size(3, 3), cv::Size(-1, -1), cv::TermCriteria(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS, 20, 0.03));
+		cv::drawChessboardCorners(cv::cvarrToMat(srcImg[i]), patternSize, corners, found);
+		pCount[i] = corners.size;
+		cvShowImage("Calibration",srcImg[i]);
+		cv::waitKey(100);
+	
+		allCorners.insert(allCorners.end(), corners.begin(), corners.end());
+	}
+	
+	int allPoints = foundNum * PAT_SIZE;
 
 	//// (2)3次元空間座標の設定
 	//CvPoint3D32f[] objects = new CvPoint3D32f[allPoints];
