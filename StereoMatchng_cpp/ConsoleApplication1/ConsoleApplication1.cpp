@@ -28,12 +28,17 @@ int main(int argc, const char* argv[])
 	//cv::imshow("red", redImg);
 	//cv::waitKey(0);
 	//cv::destroyAllWindows();
-
 	int comindex = inputcommand();
 
 	std::cout << Command[comindex]<<"‚ðŽÀs‚µ‚Ü‚·B" << std::endl;
 
-
+	switch (comindex)
+	{
+	case 0:
+		CalibrateCamera::Calibrate();
+	default:
+		break;
+	}
 
 
 	getchar();

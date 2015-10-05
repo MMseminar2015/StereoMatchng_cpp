@@ -11,7 +11,8 @@ std::vector<std::string> FileUtility::GetFilesFromDirectory(std::string dirpath,
 
 	WIN32_FIND_DATAA fd;
 
-	
+	if(dirpath.find_last_of( "\\")!= dirpath.size()-1)
+		dirpath.append("\\");
 
 	std::string ss = dirpath + filter;
 	HANDLE hFind = FindFirstFileA(ss.c_str(), &fd);

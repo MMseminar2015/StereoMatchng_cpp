@@ -12,24 +12,21 @@
 /// </remarks>
 class CalibrateCamera
 {
+public:
+	//#define IMAGE_NUM  (25)         /* 画像数 */
+	static const int PAT_ROW = 7;     /* パターンの行数 */
+	static const int  PAT_COL = 10;   /* パターンの列数 */
 
-public: 
-	static const std::string IMGS_PATH;
-	
-	static const int IMAGE_NUM = 135;           // 画像数
-	static const int PAT_ROW = 7;              // パターンの行数 
-	static const int PAT_COL = 10;             // パターンの列数 
-	static const int PAT_SIZE = PAT_ROW * PAT_COL;
-	//     const int ALL_POINTS = IMAGE_NUM * PAT_SIZE;
-	static const float CHESS_SIZE;     // パターン1マスの1辺サイズ[mm]
-	static const CvSize patternSize;
 
 public:
-	/// <summary>
-	/// カメラキャリブレーション実行
-	/// </summary>
-	static void Calibrate(std::string imgdirpath);
+	//カメラキャリブレーション実行
+	static void Calibrate();
 
+	// カメラキャリブレーション処理
+	static void Calibrate_FromDir(std::string imgdirpath);
+
+private:
+	static void Calibrate_FromDir_Prototype(std::string imgdirpath);
 	
 
 };
