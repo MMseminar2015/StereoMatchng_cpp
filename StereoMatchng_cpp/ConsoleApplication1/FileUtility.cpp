@@ -11,6 +11,8 @@ std::vector<std::string> FileUtility::GetFilesFromDirectory(std::string dirpath,
 
 	WIN32_FIND_DATAA fd;
 
+	
+
 	std::string ss = dirpath + filter;
 	HANDLE hFind = FindFirstFileA(ss.c_str(), &fd);
 
