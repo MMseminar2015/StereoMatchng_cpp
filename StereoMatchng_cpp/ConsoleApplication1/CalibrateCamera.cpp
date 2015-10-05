@@ -67,37 +67,73 @@ void CalibrateCamera::Calibrate_FromDir(std::string imgdirpath)
 
 	int foundNum = 0;
 	std::vector<CvPoint2D32f> allCorners = std::vector<CvPoint2D32f>();
-	CvPoint2D32f *corners = new CvPoint2D32f[files.size()*PAT_SIZE];
-	int* pCount=new int[IMAGE_NUM];
+	//CvPoint2D32f *corners = new CvPoint2D32f[files.size()*PAT_SIZE];
+	//int* pCount=new int[IMAGE_NUM];
 	//cvNamedWindow("Calibration", CV_WINDOW_AUTOSIZE);
+
+	//std::vector<CvPoint2D32f> corners = std::vector<CvPoint2D32f>(files.size()*PAT_SIZE);
+	std::vector<int> pCount;
 	for (int i = 0; i < files.size(); i++)
 	{
-		
-		bool found = cvFindChessboardCorners(srcImg[i], patternSize, &corners[i * PAT_SIZE], &corner_count);
+		std::vector<CvPoint2D32f> corners = std::vector<CvPoint2D32f>(PAT_SIZE);
+		int found = cvFindChessboardCorners(srcImg[i], patternSize, corners.data(), &corner_count);
 		if (found)
 		{
 			foundNum++;
+
+			/*************************************************/
+			/* (4)コーナー位置をサブピクセル精度に修正，描画 */
+			/*************************************************/
+
+			IplImage *srcGray = cvCreateImage(cvGetSize(srcImg[i]), IPL_DEPTH_8U, 1);
+			cvCvtColor(srcImg[i], srcGray, CV_BGR2GRAY);
+			cvFindCornerSubPix(srcGray, corners.data(), corner_count,
+				cvSize(3, 3), cvSize(-1, -1), cvTermCriteria(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS, 20, 0.03));
+			cvDrawChessboardCorners(srcImg[i], patternSize, corners.data(), corner_count, found);
+			pCount.push_back(corner_count);
+
+			allCorners.insert(allCorners.end(), corners.begin(), corners.end());
 		}
 		else
 		{
 			std::cout << files[i] + " is invalid" << std::endl;
 		}
-		/*************************************************/
-		/* (4)コーナー位置をサブピクセル精度に修正，描画 */
-		/*************************************************/
 
-		IplImage *srcGray = cvCreateImage(cvGetSize(srcImg[i]), IPL_DEPTH_8U, 1);
-		cvCvtColor(srcImg[i], srcGray, CV_BGR2GRAY);
-		cvFindCornerSubPix(srcGray, &corners[i * PAT_SIZE], corner_count,
-			cvSize(3, 3), cvSize(-1, -1), cvTermCriteria(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS, 20, 0.03));
-		cvDrawChessboardCorners(srcImg[i], patternSize, &corners[i * PAT_SIZE], corner_count, found);
-		pCount[i] = corner_count;
+
 		//cvShowImage("Calibration", srcImg[i]);
 		//cvWaitKey(100);
-		//cvWaitKey(0);
 
 		//allCorners.insert(allCorners.end(), corners.begin(), corners.end());
 	}
+
+	//for (int i = 0; i < files.size(); i++)
+	//{
+	//	
+	//	int found = cvFindChessboardCorners(srcImg[i], patternSize, &corners[i * PAT_SIZE], &corner_count);
+	//	if (found)
+	//	{
+	//		foundNum++;
+	//	}
+	//	else
+	//	{
+	//		std::cout << files[i] + " is invalid" << std::endl;
+	//	}
+	//	/*************************************************/
+	//	/* (4)コーナー位置をサブピクセル精度に修正，描画 */
+	//	/*************************************************/
+
+	//	IplImage *srcGray = cvCreateImage(cvGetSize(srcImg[i]), IPL_DEPTH_8U, 1);
+	//	cvCvtColor(srcImg[i], srcGray, CV_BGR2GRAY);
+	//	cvFindCornerSubPix(srcGray, &corners[i * PAT_SIZE], corner_count,
+	//		cvSize(3, 3), cvSize(-1, -1), cvTermCriteria(CV_TERMCRIT_ITER | CV_TERMCRIT_EPS, 20, 0.03));
+	//	cvDrawChessboardCorners(srcImg[i], patternSize, &corners[i * PAT_SIZE], corner_count, found);
+	//	pCount[i] = corner_count;
+
+	//	//cvShowImage("Calibration", srcImg[i]);
+	//	//cvWaitKey(100);
+
+	//	//allCorners.insert(allCorners.end(), corners.begin(), corners.end());
+	//}
 
 	int allPoints = foundNum * PAT_SIZE;
 
@@ -107,9 +143,11 @@ void CalibrateCamera::Calibrate_FromDir(std::string imgdirpath)
 	CvMat imagePoints;
 	CvMat pointCounts;
 
-	cvInitMatHeader(&imagePoints, allPoints, 1, CV_32FC2, corners);
-	cvInitMatHeader(&pointCounts, foundNum, 1, CV_32SC1, pCount);
+	//cvInitMatHeader(&imagePoints, allPoints, 1, CV_32FC2, corners.data);
+	//cvInitMatHeader(&pointCounts, foundNum, 1, CV_32SC1, pCount);
 
+	cvInitMatHeader(&imagePoints, allPoints, 1, CV_32FC2, allCorners.data());
+	cvInitMatHeader(&pointCounts, foundNum, 1, CV_32SC1, pCount.data());
 
 	/**************************/
 	/* (2)3次元空間座標の設定 */
@@ -136,11 +174,25 @@ void CalibrateCamera::Calibrate_FromDir(std::string imgdirpath)
 
 	/*************************************/
 	/* (5)内部パラメータ，歪み係数の推定 */
+	//http://opencv.jp/opencv-2.1/cpp/camera_calibration_and_3d_reconstruction.html
 	/*************************************/
 
+	//内部パラメータ行列
+	//fx,fy:焦点距離（ピクセル単位） cx,cy:主点（通常は画像中心）スキューs=0,アスペクト比a=1と仮定
+	//[fx 0 cx]
+	//[0 fy cy]
+	//[0 0 1]
 	CvMat *intrinsic = cvCreateMat(3, 3, CV_32FC1);
+
+	//回転ベクトル
+	//ロドリゲスの回転公式参照
+	//ベクトルの方向：回転軸　ベクトルの長さ：回転量
 	CvMat *rotation = cvCreateMat(1, 3, CV_32FC1);
+
+	//並進ベクトル
 	CvMat *translation = cvCreateMat(1, 3, CV_32FC1);
+
+	//歪み係数ベクトル
 	CvMat *distortion = cvCreateMat(1, 4, CV_32FC1);
 
 	std::cout << "内部パラメータ，歪み係数推定中..." << std::endl;
