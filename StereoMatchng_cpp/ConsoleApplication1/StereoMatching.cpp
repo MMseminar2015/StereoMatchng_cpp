@@ -398,12 +398,15 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 		cameraMatrix[1], distCoeffs[1],
 		imageSize, R, T, E, F,
 		TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 100, 1e-5),
+		0 +
 		CALIB_FIX_ASPECT_RATIO +
 		CALIB_ZERO_TANGENT_DIST +
 		CALIB_USE_INTRINSIC_GUESS +
 		CALIB_SAME_FOCAL_LENGTH +
 		CALIB_RATIONAL_MODEL +
-		CALIB_FIX_K3 + CALIB_FIX_K4 + CALIB_FIX_K5);
+		CALIB_FIX_K3 +
+		CALIB_FIX_K4 +
+		CALIB_FIX_K5);
 	cout << "done with RMS error=" << rms << endl;
 
 	// CALIBRATION QUALITY CHECK
