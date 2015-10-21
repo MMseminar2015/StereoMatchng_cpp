@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "StereoMatching.h"
+#include <Windows.h>
 
 using namespace std;
 
@@ -398,12 +399,13 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 		cameraMatrix[1], distCoeffs[1],
 		imageSize, R, T, E, F,
 		TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 100, 1e-5),
-		CALIB_FIX_ASPECT_RATIO +
-		CALIB_ZERO_TANGENT_DIST +
-		CALIB_USE_INTRINSIC_GUESS +
-		CALIB_SAME_FOCAL_LENGTH +
-		CALIB_RATIONAL_MODEL +
-		CALIB_FIX_K3 + CALIB_FIX_K4 + CALIB_FIX_K5);
+		//CALIB_FIX_ASPECT_RATIO +
+		//CALIB_ZERO_TANGENT_DIST +
+		CALIB_USE_INTRINSIC_GUESS// +
+		//CALIB_SAME_FOCAL_LENGTH +
+		//CALIB_RATIONAL_MODEL +
+		//CALIB_FIX_K3 + CALIB_FIX_K4 + CALIB_FIX_K5
+		);
 	cout << "done with RMS error=" << rms << endl;
 
 	// CALIBRATION QUALITY CHECK
@@ -590,7 +592,7 @@ int StereoMatching::Calibrate(int boardwidth, int boardheight, string imglistfn,
 
 	if (imagelistfn == "")
 	{
-		imagelistfn = "C:/stereo/data/stereo_calib.xml";
+		imagelistfn = "C:/stereo/";
 		boardSize = Size(9, 6);
 	}
 	else if (boardSize.width <= 0 || boardSize.height <= 0)
@@ -601,25 +603,29 @@ int StereoMatching::Calibrate(int boardwidth, int boardheight, string imglistfn,
 
 	vector<string> imagelist;
 	try {
-		imagelist = Directory::GetListFiles(imglistfn, "*.bmp");
+		imagelist = Directory::GetListFiles(imagelistfn);
 	}
 	catch (Exception e) {
 		cout << e.msg << endl;
 	}
 
-	try {
-		bool ok = readStringList(imagelistfn, imagelist);
-		if (!ok || imagelist.empty())
-		{
-			cout << "can not open " << imagelistfn << " or the string list is empty" << endl;
-			return print_help_calib();
-		}
+	//try {
+	//	bool ok = readStringList(imagelistfn, imagelist);
+	//	if (!ok || imagelist.empty())
+	//	{
+	//		cout << "can not open " << imagelistfn << " or the string list is empty" << endl;
+	//		return print_help_calib();
+	//	}
+	//}
+	//catch (Exception e) {
+	//	cout << "" << endl;
+	//}
+	vector<string> newimagelist;
+	for (int i = 0; i < imagelist.size(); i=i+2) {
+		newimagelist.push_back(imagelist[i + 1]);
+		newimagelist.push_back(imagelist[i]);
 	}
-	catch (Exception e) {
-		cout << "" << endl;
-	}
-
-	StereoCalibrate(imagelist, boardSize, false, true, showRectified);
+	StereoCalibrate(newimagelist, boardSize, false, false, showRectified);
 	return 0;
 
 }
