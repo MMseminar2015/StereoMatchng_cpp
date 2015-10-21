@@ -391,6 +391,15 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 	Mat cameraMatrix[2], distCoeffs[2];
 	cameraMatrix[0] = initCameraMatrix2D(objectPoints, imagePoints[0], imageSize, 0);
 	cameraMatrix[1] = initCameraMatrix2D(objectPoints, imagePoints[1], imageSize, 0);
+
+	{
+		//Mat rvecs[2], tvecs[2];
+		//cv::calibrateCamera(objectPoints, imagePoints[0], imageSize, cameraMatrix[0], distCoeffs[0], rvecs[0], tvecs[0]);
+		//cv::calibrateCamera(objectPoints, imagePoints[1], imageSize, cameraMatrix[1], distCoeffs[1], rvecs[1], tvecs[1]);
+
+		//cout << cameraMatrix[0] << endl;
+	}
+
 	Mat R, T, E, F;
 
 	double rms = stereoCalibrate(objectPoints, imagePoints[0], imagePoints[1],
@@ -589,12 +598,12 @@ int StereoMatching::Calibrate(int boardwidth, int boardheight, string imglistfn,
 		return print_help_calib();
 	}
 
-	imagelistfn = imglistfn;
+	imagelistfn = imglistfn = "C:/stereo/FlyCap_pic/";
 
 	if (imagelistfn == "")
 	{
 		imagelistfn = "C:/stereo/data/stereo_calib.xml";
-		boardSize = Size(9, 6);
+		boardSize = Size(10, 7);
 	}
 	else if (boardSize.width <= 0 || boardSize.height <= 0)
 	{
@@ -610,19 +619,7 @@ int StereoMatching::Calibrate(int boardwidth, int boardheight, string imglistfn,
 		cout << e.msg << endl;
 	}
 
-	try {
-		bool ok = readStringList(imagelistfn, imagelist);
-		if (!ok || imagelist.empty())
-		{
-			cout << "can not open " << imagelistfn << " or the string list is empty" << endl;
-			return print_help_calib();
-		}
-	}
-	catch (Exception e) {
-		cout << "" << endl;
-	}
-
-	StereoCalibrate(imagelist, boardSize, false, true, showRectified);
+	StereoCalibrate(imagelist, boardSize, false, false, showRectified);
 	return 0;
 
 }
