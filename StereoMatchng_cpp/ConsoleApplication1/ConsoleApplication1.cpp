@@ -31,7 +31,7 @@ int main(int argc, const char* argv[])
 	int comindex = inputcommand();
 
 	std::cout << Command[comindex]<<"‚ğÀs‚µ‚Ü‚·B" << std::endl;
-
+	
 	switch (comindex)
 	{
 	case 0:

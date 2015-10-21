@@ -24,10 +24,11 @@ public:
 
 	// カメラキャリブレーション処理
 	static void Calibrate_FromDir(std::string imgdirpath);
+	static void StereoCalibrate(cv::Mat *intrinsic, cv::Mat *distortion);
 
 private:
 	static void Calibrate_FromDir_Prototype(std::string imgdirpath);
-	
+	static void StereoCalibrate_Prototype();
 
 };
 

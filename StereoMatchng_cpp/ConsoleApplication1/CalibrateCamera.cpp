@@ -60,7 +60,8 @@ void CalibrateCamera::Calibrate_FromDir(std::string imgdirpath)
 	/***************************************************************/
 
 	int  PAT_SIZE = PAT_ROW*PAT_COL;
-	int  CHESS_SIZE = 24.0;      /* パターン1マスの1辺サイズ[mm] */
+	//double  CHESS_SIZE = 24.0;      /* パターン1マスの1辺サイズ[mm] */
+	double  CHESS_SIZE = 16.8;      /* パターン1マスの1辺サイズ[mm] */
 	int corner_count;
 
 	CvSize patternSize = cvSize(PAT_COL, PAT_ROW);
@@ -355,4 +356,362 @@ void CalibrateCamera::Calibrate_FromDir_Prototype(std::string imgdirpath)
 
 }
 
+using namespace cv;
+using namespace std;
+
+void CalibrateCamera::StereoCalibrate(Mat *cameraMatrix1,Mat *distCoeffs1)
+{
+	//numBoardsは左・右片方だけの数
+	//チェッカーボードはdata2, 3の計25枚
+	int numBoards = 17;
+	int board_w = 10;
+	int board_h = 7;
+	CvSize board_sz = cvSize(board_w, board_h);
+	int board_n = board_w*board_h;
+	vector<vector<Point3f> > object_points;
+	vector<vector<Point2f> > imagePoints1, imagePoints2;
+	vector<Point2f> corners1, corners2;
+	vector<Point3f> obj;
+	Mat gray1, gray2;
+	vector<cv::Mat> imgL, imgR;
+
+	for (int j = 0; j < board_n; j++)
+	{
+		obj.push_back(Point3f(j / board_w, j%board_w, 0.0f));
+	}
+
+	//画像読み込み,vecter<Mat>imgLにL画像, vector<Mat>imgRにR画像
+	for (int i = 0; i < numBoards; i++) {
+		std::stringstream stream;
+		std::stringstream stream2;
+		stream << "non_undistort/1280_960/l" << i + 1 << ".JPG";
+		stream2 << "non_undistort/1280_960/r" << i + 1 << ".JPG";
+		std::string fileName = stream.str();
+		std::string fileName2 = stream2.str();
+		imgL.push_back(cv::imread(fileName));
+		imgR.push_back(cv::imread(fileName2));
+		cout << "Load checker image: " << fileName << endl;
+		cout << "Load checker image: " << fileName2 << endl;
+	}
+
+	Mat cameraMatrix(3, 3, CV_64F);
+	Mat distCoeffs(1, 5, CV_64F);
+
+	// 1280*960
+	cameraMatrix.at<double>(0, 0) = 763.551851863385;
+	cameraMatrix.at<double>(0, 2) = 651.0497287068629;
+	cameraMatrix.at<double>(1, 1) = 760.6083431310567;
+	cameraMatrix.at<double>(1, 2) = 475.4119088803083;
+
+	cameraMatrix.at<double>(0, 1) = 0;
+	cameraMatrix.at<double>(1, 0) = 0;
+	cameraMatrix.at<double>(2, 0) = 0;
+	cameraMatrix.at<double>(2, 1) = 0;
+	cameraMatrix.at<double>(2, 2) = 1;
+	distCoeffs.at<double>(0, 0) = -0.2783040792372516;
+	distCoeffs.at<double>(0, 1) = 0.1490571653850003;
+	distCoeffs.at<double>(0, 2) = 0.002587035974869547;
+	distCoeffs.at<double>(0, 3) = 0.0006115474139258526;
+	distCoeffs.at<double>(0, 4) = -0.06305566979276371;
+
+	vector<Mat> undistImgL, undistImgR;
+	cv::Mat tmp(imgL[0].rows, imgL[0].cols, CV_8UC1);
+
+	// 歪み補正(L, R)
+	for (int i = 0; i < numBoards; i++) {
+		undistImgL.push_back(tmp);
+		undistImgR.push_back(tmp);
+		undistort(imgL[i], undistImgL[i], cameraMatrix, distCoeffs);
+		undistort(imgR[i], undistImgR[i], cameraMatrix, distCoeffs);
+	}
+
+	//imshow("non_undistort", imgL[0]);
+	//imshow("undistort", undistImgL[0]);
+	waitKey(0);
+
+	int success = 0, k = 0, num = 0;
+	bool found1 = false, found2 = false;
+
+	while (success < numBoards)
+	{
+		cv::Mat img1 = undistImgL[num];
+		cv::Mat img2 = undistImgR[num];
+
+		cvtColor(img1, gray1, CV_BGR2GRAY);
+		cvtColor(img2, gray2, CV_BGR2GRAY);
+
+		//チェッカーボード探し・キャリブレーション描画
+		found1 = findChessboardCorners(img1, board_sz, corners1, CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FILTER_QUADS);
+		found2 = findChessboardCorners(img2, board_sz, corners2, CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FILTER_QUADS);
+		if (found1) {
+			cornerSubPix(gray1, corners1, Size(11, 11), Size(-1, -1), TermCriteria(CV_TERMCRIT_EPS | CV_TERMCRIT_ITER, 30, 0.1));
+			drawChessboardCorners(gray1, board_sz, corners1, found1);
+		}
+		if (found2) {
+			cornerSubPix(gray2, corners2, Size(11, 11), Size(-1, -1), TermCriteria(CV_TERMCRIT_EPS | CV_TERMCRIT_ITER, 30, 0.1));
+			drawChessboardCorners(gray2, board_sz, corners2, found2);
+		}
+		//キャリブレーション結果表示
+		//imshow("image1", gray1);
+		//imshow("image2", gray2);
+		k = waitKey(10);
+
+		if (found1 && found2) {
+			k = waitKey(0);
+		}
+		if (k == 27) { //ESCキーでブレイク
+			break;
+		}
+		if (found1 != 0 && found2 != 0) {
+			imagePoints1.push_back(corners1);
+			imagePoints2.push_back(corners2);
+			object_points.push_back(obj);
+			printf("Corners stored\n");
+			success++;
+			if (success >= numBoards) {
+				break;
+			}
+		}
+		num++;
+	}
+
+	destroyAllWindows();
+	printf("Starting Calibration\n");
+	Mat CM1 = Mat(3, 3, CV_64FC1);
+	Mat CM2 = Mat(3, 3, CV_64FC1);
+	Mat D1, D2;
+	Mat R, T, E, F;
+
+	object_points.resize(numBoards, object_points[0]);
+	stereoCalibrate(object_points, imagePoints1, imagePoints2,
+		CM1, D1, CM2, D2, undistImgL[0].size(), R, T, E, F,
+		cvTermCriteria(CV_TERMCRIT_ITER + CV_TERMCRIT_EPS, 100, 1e-5),
+		CV_CALIB_SAME_FOCAL_LENGTH | CV_CALIB_ZERO_TANGENT_DIST);
+
+	FileStorage fs1("mystereocalib.txt", FileStorage::WRITE);
+	fs1 << "CM1" << CM1;
+	fs1 << "CM2" << CM2;
+	fs1 << "D1" << D1;
+	fs1 << "D2" << D2;
+	fs1 << "R" << R;
+	fs1 << "T" << T;
+	fs1 << "E" << E;
+	fs1 << "F" << F;
+	printf("Done Calibration\n");
+	printf("Starting Rectification\n");
+	Mat R1, R2, P1, P2, Q;
+	stereoRectify(CM1, D1, CM2, D2, imgL[0].size(), R, T, R1, R2, P1, P2, Q);
+	fs1 << "R1" << R1;
+	fs1 << "R2" << R2;
+	fs1 << "P1" << P1;
+	fs1 << "P2" << P2;
+	fs1 << "Q" << Q;
+	printf("Done Rectification\n");
+	printf("Applying Undistort\n");
+	Mat map1x, map1y, map2x, map2y;
+	Mat imgU1, imgU2;
+	initUndistortRectifyMap(CM1, D1, R1, P1, imgL[0].size(), CV_32FC1, map1x, map1y);
+	initUndistortRectifyMap(CM2, D2, R2, P2, imgR[0].size(), CV_32FC1, map2x, map2y);
+	printf("Undistort complete\n");
+
+	num = 0;
+	while (1)
+	{
+		cv::Mat img1 = undistImgL[num];
+		cv::Mat img2 = undistImgR[num];
+		remap(img1, imgU1, map1x, map1y, INTER_LINEAR, BORDER_CONSTANT, Scalar());
+		remap(img2, imgU2, map2x, map2y, INTER_LINEAR, BORDER_CONSTANT, Scalar());
+		imshow("image1", imgU1);
+		//imshow("image2", imgU2);
+		if (num == 0) {
+			imwrite("unsdist_rectifyL.jpg", imgU1);
+			imwrite("unsdist_rectifyR.jpg", imgU2);
+		}
+		k = waitKey(0);
+		if (k == 27)
+		{
+			break;
+		}
+		num++;
+
+	}
+}
+
+void CalibrateCamera::StereoCalibrate_Prototype()
+{
+	//numBoardsは左・右片方だけの数
+	//チェッカーボードはdata2, 3の計25枚
+	int numBoards = 17;
+	int board_w = 10;
+	int board_h = 7;
+	CvSize board_sz = cvSize(board_w, board_h);
+	int board_n = board_w*board_h;
+	vector<vector<Point3f> > object_points;
+	vector<vector<Point2f> > imagePoints1, imagePoints2;
+	vector<Point2f> corners1, corners2;
+	vector<Point3f> obj;
+	Mat gray1, gray2;
+	vector<cv::Mat> imgL, imgR;
+
+	for (int j = 0; j < board_n; j++)
+	{
+		obj.push_back(Point3f(j / board_w, j%board_w, 0.0f));
+	}
+
+	//画像読み込み,vecter<Mat>imgLにL画像, vector<Mat>imgRにR画像
+	for (int i = 0; i < numBoards; i++) {
+		std::stringstream stream;
+		std::stringstream stream2;
+		stream << "non_undistort/1280_960/l" << i + 1 << ".JPG";
+		stream2 << "non_undistort/1280_960/r" << i + 1 << ".JPG";
+		std::string fileName = stream.str();
+		std::string fileName2 = stream2.str();
+		imgL.push_back(cv::imread(fileName));
+		imgR.push_back(cv::imread(fileName2));
+		cout << "Load checker image: " << fileName << endl;
+		cout << "Load checker image: " << fileName2 << endl;
+	}
+
+	Mat cameraMatrix(3, 3, CV_64F);
+	Mat distCoeffs(1, 5, CV_64F);
+
+	// 1280*960
+	cameraMatrix.at<double>(0, 0) = 763.551851863385;
+	cameraMatrix.at<double>(0, 2) = 651.0497287068629;
+	cameraMatrix.at<double>(1, 1) = 760.6083431310567;
+	cameraMatrix.at<double>(1, 2) = 475.4119088803083;
+
+	cameraMatrix.at<double>(0, 1) = 0;
+	cameraMatrix.at<double>(1, 0) = 0;
+	cameraMatrix.at<double>(2, 0) = 0;
+	cameraMatrix.at<double>(2, 1) = 0;
+	cameraMatrix.at<double>(2, 2) = 1;
+	distCoeffs.at<double>(0, 0) = -0.2783040792372516;
+	distCoeffs.at<double>(0, 1) = 0.1490571653850003;
+	distCoeffs.at<double>(0, 2) = 0.002587035974869547;
+	distCoeffs.at<double>(0, 3) = 0.0006115474139258526;
+	distCoeffs.at<double>(0, 4) = -0.06305566979276371;
+	
+	vector<Mat> undistImgL, undistImgR;
+	cv::Mat tmp(imgL[0].rows, imgL[0].cols, CV_8UC1);
+
+	// 歪み補正(L, R)
+	for (int i = 0; i < numBoards; i++) {
+		undistImgL.push_back(tmp);
+		undistImgR.push_back(tmp);
+		undistort(imgL[i], undistImgL[i], cameraMatrix, distCoeffs);
+		undistort(imgR[i], undistImgR[i], cameraMatrix, distCoeffs);
+	}
+
+	//imshow("non_undistort", imgL[0]);
+	//imshow("undistort", undistImgL[0]);
+	waitKey(0);
+
+	int success = 0, k = 0, num = 0;
+	bool found1 = false, found2 = false;
+
+	while (success < numBoards)
+	{
+		cv::Mat img1 = undistImgL[num];
+		cv::Mat img2 = undistImgR[num];
+
+		cvtColor(img1, gray1, CV_BGR2GRAY);
+		cvtColor(img2, gray2, CV_BGR2GRAY);
+
+		//チェッカーボード探し・キャリブレーション描画
+		found1 = findChessboardCorners(img1, board_sz, corners1, CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FILTER_QUADS);
+		found2 = findChessboardCorners(img2, board_sz, corners2, CV_CALIB_CB_ADAPTIVE_THRESH | CV_CALIB_CB_FILTER_QUADS);
+		if (found1) {
+			cornerSubPix(gray1, corners1, Size(11, 11), Size(-1, -1), TermCriteria(CV_TERMCRIT_EPS | CV_TERMCRIT_ITER, 30, 0.1));
+			drawChessboardCorners(gray1, board_sz, corners1, found1);
+		}
+		if (found2) {
+			cornerSubPix(gray2, corners2, Size(11, 11), Size(-1, -1), TermCriteria(CV_TERMCRIT_EPS | CV_TERMCRIT_ITER, 30, 0.1));
+			drawChessboardCorners(gray2, board_sz, corners2, found2);
+		}
+		//キャリブレーション結果表示
+		//imshow("image1", gray1);
+		//imshow("image2", gray2);
+		k = waitKey(10);
+
+		if (found1 && found2) {
+			k = waitKey(0);
+		}
+		if (k == 27) { //ESCキーでブレイク
+			break;
+		}
+		if (found1 != 0 && found2 != 0) {
+			imagePoints1.push_back(corners1);
+			imagePoints2.push_back(corners2);
+			object_points.push_back(obj);
+			printf("Corners stored\n");
+			success++;
+			if (success >= numBoards) {
+				break;
+			}
+		}
+		num++;
+	}
+
+	destroyAllWindows();
+	printf("Starting Calibration\n");
+	Mat CM1 = Mat(3, 3, CV_64FC1);
+	Mat CM2 = Mat(3, 3, CV_64FC1);
+	Mat D1, D2;
+	Mat R, T, E, F;
+
+	object_points.resize(numBoards, object_points[0]);
+	stereoCalibrate(object_points, imagePoints1, imagePoints2,
+		CM1, D1, CM2, D2, undistImgL[0].size(), R, T, E, F,
+		cvTermCriteria(CV_TERMCRIT_ITER + CV_TERMCRIT_EPS, 100, 1e-5),
+		CV_CALIB_SAME_FOCAL_LENGTH | CV_CALIB_ZERO_TANGENT_DIST);
+
+	FileStorage fs1("mystereocalib.txt", FileStorage::WRITE);
+	fs1 << "CM1" << CM1;
+	fs1 << "CM2" << CM2;
+	fs1 << "D1" << D1;
+	fs1 << "D2" << D2;
+	fs1 << "R" << R;
+	fs1 << "T" << T;
+	fs1 << "E" << E;
+	fs1 << "F" << F;
+	printf("Done Calibration\n");
+	printf("Starting Rectification\n");
+	Mat R1, R2, P1, P2, Q;
+	stereoRectify(CM1, D1, CM2, D2, imgL[0].size(), R, T, R1, R2, P1, P2, Q);
+	fs1 << "R1" << R1;
+	fs1 << "R2" << R2;
+	fs1 << "P1" << P1;
+	fs1 << "P2" << P2;
+	fs1 << "Q" << Q;
+	printf("Done Rectification\n");
+	printf("Applying Undistort\n");
+	Mat map1x, map1y, map2x, map2y;
+	Mat imgU1, imgU2;
+	initUndistortRectifyMap(CM1, D1, R1, P1, imgL[0].size(), CV_32FC1, map1x, map1y);
+	initUndistortRectifyMap(CM2, D2, R2, P2, imgR[0].size(), CV_32FC1, map2x, map2y);
+	printf("Undistort complete\n");
+
+	num = 0;
+	while (1)
+	{
+		cv::Mat img1 = undistImgL[num];
+		cv::Mat img2 = undistImgR[num];
+		remap(img1, imgU1, map1x, map1y, INTER_LINEAR, BORDER_CONSTANT, Scalar());
+		remap(img2, imgU2, map2x, map2y, INTER_LINEAR, BORDER_CONSTANT, Scalar());
+		imshow("image1", imgU1);
+		//imshow("image2", imgU2);
+		if (num == 0) {
+			imwrite("unsdist_rectifyL.jpg", imgU1);
+			imwrite("unsdist_rectifyR.jpg", imgU2);
+		}
+		k = waitKey(0);
+		if (k == 27)
+		{
+			break;
+		}
+		num++;
+
+	}
+}
 
