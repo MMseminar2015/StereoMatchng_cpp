@@ -393,11 +393,12 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 	cameraMatrix[1] = initCameraMatrix2D(objectPoints, imagePoints[1], imageSize, 0);
 
 	{
-		//Mat rvecs[2], tvecs[2];
-		//cv::calibrateCamera(objectPoints, imagePoints[0], imageSize, cameraMatrix[0], distCoeffs[0], rvecs[0], tvecs[0]);
-		//cv::calibrateCamera(objectPoints, imagePoints[1], imageSize, cameraMatrix[1], distCoeffs[1], rvecs[1], tvecs[1]);
+		Mat rvecs[2], tvecs[2];
+		cv::calibrateCamera(objectPoints[0], imagePoints[0], imageSize, cameraMatrix[0], distCoeffs[0], rvecs[0], tvecs[0]);
+		cv::calibrateCamera(objectPoints[1], imagePoints[1], imageSize, cameraMatrix[1], distCoeffs[1], rvecs[1], tvecs[1]);
+		
 
-		//cout << cameraMatrix[0] << endl;
+		cout << cameraMatrix[0] << endl;
 	}
 
 	Mat R, T, E, F;
