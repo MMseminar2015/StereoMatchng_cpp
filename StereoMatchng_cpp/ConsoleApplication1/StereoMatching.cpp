@@ -391,6 +391,37 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 	Mat cameraMatrix[2], distCoeffs[2];
 	cameraMatrix[0] = initCameraMatrix2D(objectPoints, imagePoints[0], imageSize, 0);
 	cameraMatrix[1] = initCameraMatrix2D(objectPoints, imagePoints[1], imageSize, 0);
+	//distCoeffs[0] = Mat(1, 5, CV_64F);
+	//distCoeffs[1] = Mat(1, 5, CV_64F);
+
+	//cameraMatrix[0].at<double>(0, 0) = 393;
+	//cameraMatrix[0].at<double>(0, 1) = 0;
+	//cameraMatrix[0].at<double>(0, 2) = 153;
+	//cameraMatrix[0].at<double>(1, 0) = 0;
+	//cameraMatrix[0].at<double>(1, 1) = 392;
+	//cameraMatrix[0].at<double>(1, 2) = 120;
+	//cameraMatrix[0].at<double>(2, 0) = 0;
+	//cameraMatrix[0].at<double>(2, 1) = 0;
+	//cameraMatrix[0].at<double>(2, 2) = 1;
+	//cameraMatrix[1].at<double>(0, 0) = 393;
+	//cameraMatrix[1].at<double>(0, 1) = 0;
+	//cameraMatrix[1].at<double>(0, 2) = 153;
+	//cameraMatrix[1].at<double>(1, 0) = 0;
+	//cameraMatrix[1].at<double>(1, 1) = 392;
+	//cameraMatrix[1].at<double>(1, 2) = 120;
+	//cameraMatrix[1].at<double>(2, 0) = 0;
+	//cameraMatrix[1].at<double>(2, 1) = 0;
+	//cameraMatrix[1].at<double>(2, 2) = 1;
+
+	//distCoeffs[0].at<double>(0, 0) = -0.393;
+	//distCoeffs[0].at<double>(0, 1) = 0.273;
+	//distCoeffs[0].at<double>(0, 2) = -0.000508;
+	//distCoeffs[0].at<double>(0, 3) = -0.000023;
+	//distCoeffs[1].at<double>(0, 0) = -0.393;
+	//distCoeffs[1].at<double>(0, 1) = 0.273;
+	//distCoeffs[1].at<double>(0, 2) = -0.000508;
+	//distCoeffs[1].at<double>(0, 3) = -0.000023;
+
 
 	Mat R, T, E, F;
 
@@ -399,17 +430,71 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 		cameraMatrix[1], distCoeffs[1],
 		imageSize, R, T, E, F,
 		TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 100, 1e-5),
-		CALIB_FIX_INTRINSIC +
-//		CALIB_FIX_ASPECT_RATIO +
-	//	CALIB_ZERO_TANGENT_DIST +
+		//CALIB_FIX_INTRINSIC +
+		//CALIB_FIX_ASPECT_RATIO +
+		//CALIB_ZERO_TANGENT_DIST +
 		//CALIB_USE_INTRINSIC_GUESS +
 		//CALIB_SAME_FOCAL_LENGTH +
 		//CALIB_RATIONAL_MODEL +
-		//CALIB_FIX_K3 +
-		//CALIB_FIX_K4 +
-		//CALIB_FIX_K5
+		CALIB_FIX_K3 +
+		CALIB_FIX_K4 +
+		CALIB_FIX_K5 +
+		CALIB_FIX_K6 +
 		0);
 	cout << "done with RMS error=" << rms << endl;
+
+	// òcÇ›ï‚ê≥(L, R)
+	for (int i = 0; i < 1; i++) {
+		vector<Mat> undistImgL, undistImgR;
+		undistImgL.push_back(Mat(imageSize, CV_8UC1));
+		undistImgR.push_back(Mat(imageSize, CV_8UC1));
+		undistort(imread(imagelist[0], 0), undistImgL[i], cameraMatrix[0], distCoeffs[0]);
+		undistort(imread(imagelist[1], 0), undistImgR[i], cameraMatrix[1], distCoeffs[1]);
+		imshow("0", undistImgL[0]);
+		imshow("1", undistImgR[0]);
+		waitKey();
+	}
+
+	cameraMatrix[0].at<double>(0, 0) = 393;
+	cameraMatrix[0].at<double>(0, 1) = 0;
+	cameraMatrix[0].at<double>(0, 2) = 153;
+	cameraMatrix[0].at<double>(1, 0) = 0;
+	cameraMatrix[0].at<double>(1, 1) = 392;
+	cameraMatrix[0].at<double>(1, 2) = 120;
+	cameraMatrix[0].at<double>(2, 0) = 0;
+	cameraMatrix[0].at<double>(2, 1) = 0;
+	cameraMatrix[0].at<double>(2, 2) = 1;
+	cameraMatrix[1].at<double>(0, 0) = 393;
+	cameraMatrix[1].at<double>(0, 1) = 0;
+	cameraMatrix[1].at<double>(0, 2) = 153;
+	cameraMatrix[1].at<double>(1, 0) = 0;
+	cameraMatrix[1].at<double>(1, 1) = 392;
+	cameraMatrix[1].at<double>(1, 2) = 120;
+	cameraMatrix[1].at<double>(2, 0) = 0;
+	cameraMatrix[1].at<double>(2, 1) = 0;
+	cameraMatrix[1].at<double>(2, 2) = 1;
+
+	distCoeffs[0].at<double>(0, 0) = -0.393;
+	distCoeffs[0].at<double>(0, 1) = 0.273;
+	distCoeffs[0].at<double>(0, 2) = -0.000508;
+	distCoeffs[0].at<double>(0, 3) = -0.000023;
+	distCoeffs[1].at<double>(0, 0) = -0.393;
+	distCoeffs[1].at<double>(0, 1) = 0.273;
+	distCoeffs[1].at<double>(0, 2) = -0.000508;
+	distCoeffs[1].at<double>(0, 3) = -0.000023;
+
+	// òcÇ›ï‚ê≥(L, R)
+	for (int i = 0; i < 1; i++) {
+		vector<Mat> undistImgL, undistImgR;
+		undistImgL.push_back(Mat(imageSize, CV_8UC1));
+		undistImgR.push_back(Mat(imageSize, CV_8UC1));
+		undistort(imread(imagelist[0], 0), undistImgL[i], cameraMatrix[0], distCoeffs[0]);
+		undistort(imread(imagelist[1], 0), undistImgR[i], cameraMatrix[1], distCoeffs[1]);
+		imshow("0", undistImgL[0]);
+		imshow("1", undistImgR[0]);
+		waitKey();
+	}
+
 
 	// CALIBRATION QUALITY CHECK
 	// because the output fundamental matrix implicitly
@@ -453,47 +538,8 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 		cout << "Error: can not save the intrinsic parameters\n";
 
 
-	cameraMatrix[0].at<double>(0, 0) = 393;
-	cameraMatrix[0].at<double>(0, 1) = 0;
-	cameraMatrix[0].at<double>(0, 2) = 153;
-	cameraMatrix[0].at<double>(1, 0) = 0;
-	cameraMatrix[0].at<double>(1, 1) = 392;
-	cameraMatrix[0].at<double>(1, 2) = 120;
-	cameraMatrix[0].at<double>(2, 0) = 0;
-	cameraMatrix[0].at<double>(2, 1) = 0;
-	cameraMatrix[0].at<double>(2, 2) = 1;
-	cameraMatrix[1].at<double>(0, 0) = 393;
-	cameraMatrix[1].at<double>(0, 1) = 0;
-	cameraMatrix[1].at<double>(0, 2) = 153;
-	cameraMatrix[1].at<double>(1, 0) = 0;
-	cameraMatrix[1].at<double>(1, 1) = 392;
-	cameraMatrix[1].at<double>(1, 2) = 120;
-	cameraMatrix[1].at<double>(2, 0) = 0;
-	cameraMatrix[1].at<double>(2, 1) = 0;
-	cameraMatrix[1].at<double>(2, 2) = 1;
-
-	distCoeffs[0].at<double>(0, 0) = -0.393;
-	distCoeffs[0].at<double>(0, 1) = 0.273;
-	distCoeffs[0].at<double>(0, 2) = -0.000508;
-	distCoeffs[0].at<double>(0, 3) = -0.000023;
-	distCoeffs[1].at<double>(0, 0) = -0.393;
-	distCoeffs[1].at<double>(0, 1) = 0.273;
-	distCoeffs[1].at<double>(0, 2) = -0.000508;
-	distCoeffs[1].at<double>(0, 3) = -0.000023;
 
 
-	vector<Mat> undistImgL, undistImgR;
-	cv::Mat tmp(imageSize, CV_8UC1);
-
-	// òcÇ›ï‚ê≥(L, R)
-	for (int i = 0; i < 1; i++) {
-		undistImgL.push_back(tmp);
-		undistImgR.push_back(tmp);
-		undistort(imread(imagelist[0], 0), undistImgL[i], cameraMatrix[0], distCoeffs[0]);
-		undistort(imread(imagelist[1], 0), undistImgR[i], cameraMatrix[1], distCoeffs[1]);
-	}
-	imshow("0", undistImgL[0]);
-	imshow("1", undistImgR[0]);
 
 	Mat R1, R2, P1, P2, Q;
 	Rect validRoi[2];
