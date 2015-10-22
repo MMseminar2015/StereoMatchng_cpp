@@ -481,7 +481,19 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 	distCoeffs[1].at<double>(0, 2) = -0.000508;
 	distCoeffs[1].at<double>(0, 3) = -0.000023;
 
-	
+
+	vector<Mat> undistImgL, undistImgR;
+	cv::Mat tmp(imageSize, CV_8UC1);
+
+	// òcÇ›ï‚ê≥(L, R)
+	for (int i = 0; i < 1; i++) {
+		undistImgL.push_back(tmp);
+		undistImgR.push_back(tmp);
+		undistort(imread(imagelist[0], 0), undistImgL[i], cameraMatrix[0], distCoeffs[0]);
+		undistort(imread(imagelist[1], 0), undistImgR[i], cameraMatrix[1], distCoeffs[1]);
+	}
+	imshow("0", undistImgL[0]);
+	imshow("1", undistImgR[0]);
 
 	Mat R1, R2, P1, P2, Q;
 	Rect validRoi[2];
