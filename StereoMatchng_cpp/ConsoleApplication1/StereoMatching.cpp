@@ -425,6 +425,12 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 
 	Mat R, T, E, F;
 
+
+	//
+	// このメソッドが不具合起きてる
+	// 画像のバリエーションが少ないのかも
+	// だからここで計算しているR,T,E,Fが全部間違ってる
+	//
 	double rms = stereoCalibrate(objectPoints, imagePoints[0], imagePoints[1],
 		cameraMatrix[0], distCoeffs[0],
 		cameraMatrix[1], distCoeffs[1],
