@@ -399,15 +399,16 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 		cameraMatrix[1], distCoeffs[1],
 		imageSize, R, T, E, F,
 		TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 100, 1e-5),
-		0 +
-		CALIB_FIX_ASPECT_RATIO +
-		CALIB_ZERO_TANGENT_DIST +
-		CALIB_USE_INTRINSIC_GUESS +
-		CALIB_SAME_FOCAL_LENGTH +
-		CALIB_RATIONAL_MODEL +
-		CALIB_FIX_K3 +
-		CALIB_FIX_K4 +
-		CALIB_FIX_K5);
+		CALIB_FIX_INTRINSIC +
+//		CALIB_FIX_ASPECT_RATIO +
+	//	CALIB_ZERO_TANGENT_DIST +
+		//CALIB_USE_INTRINSIC_GUESS +
+		//CALIB_SAME_FOCAL_LENGTH +
+		//CALIB_RATIONAL_MODEL +
+		//CALIB_FIX_K3 +
+		//CALIB_FIX_K4 +
+		//CALIB_FIX_K5
+		0);
 	cout << "done with RMS error=" << rms << endl;
 
 	// CALIBRATION QUALITY CHECK
@@ -450,6 +451,37 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 	}
 	else
 		cout << "Error: can not save the intrinsic parameters\n";
+
+
+	cameraMatrix[0].at<double>(0, 0) = 393;
+	cameraMatrix[0].at<double>(0, 1) = 0;
+	cameraMatrix[0].at<double>(0, 2) = 153;
+	cameraMatrix[0].at<double>(1, 0) = 0;
+	cameraMatrix[0].at<double>(1, 1) = 392;
+	cameraMatrix[0].at<double>(1, 2) = 120;
+	cameraMatrix[0].at<double>(2, 0) = 0;
+	cameraMatrix[0].at<double>(2, 1) = 0;
+	cameraMatrix[0].at<double>(2, 2) = 1;
+	cameraMatrix[1].at<double>(0, 0) = 393;
+	cameraMatrix[1].at<double>(0, 1) = 0;
+	cameraMatrix[1].at<double>(0, 2) = 153;
+	cameraMatrix[1].at<double>(1, 0) = 0;
+	cameraMatrix[1].at<double>(1, 1) = 392;
+	cameraMatrix[1].at<double>(1, 2) = 120;
+	cameraMatrix[1].at<double>(2, 0) = 0;
+	cameraMatrix[1].at<double>(2, 1) = 0;
+	cameraMatrix[1].at<double>(2, 2) = 1;
+
+	distCoeffs[0].at<double>(0, 0) = -0.393;
+	distCoeffs[0].at<double>(0, 1) = 0.273;
+	distCoeffs[0].at<double>(0, 2) = -0.000508;
+	distCoeffs[0].at<double>(0, 3) = -0.000023;
+	distCoeffs[1].at<double>(0, 0) = -0.393;
+	distCoeffs[1].at<double>(0, 1) = 0.273;
+	distCoeffs[1].at<double>(0, 2) = -0.000508;
+	distCoeffs[1].at<double>(0, 3) = -0.000023;
+
+	
 
 	Mat R1, R2, P1, P2, Q;
 	Rect validRoi[2];
