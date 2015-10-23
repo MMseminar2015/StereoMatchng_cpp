@@ -173,11 +173,11 @@ int StereoMatching::Matching(
 		fs["R"] >> R;
 		fs["T"] >> T;
 
-		stereoRectify(M1, D1, M2, D2, img_size, R, T, R1, R2, P1, P2, Q, CALIB_ZERO_DISPARITY, -1, img_size, &roi1, &roi2);
+		cv::stereoRectify(M1, D1, M2, D2, img_size, R, T, R1, R2, P1, P2, Q, CALIB_ZERO_DISPARITY, -1, img_size, &roi1, &roi2);
 
 		Mat map11, map12, map21, map22;
-		initUndistortRectifyMap(M1, D1, R1, P1, img_size, CV_16SC2, map11, map12);
-		initUndistortRectifyMap(M2, D2, R2, P2, img_size, CV_16SC2, map21, map22);
+		cv::initUndistortRectifyMap(M1, D1, R1, P1, img_size, CV_16SC2, map11, map12);
+		cv::initUndistortRectifyMap(M2, D2, R2, P2, img_size, CV_16SC2, map21, map22);
 
 		Mat img1r, img2r;
 		remap(img1, img1r, map11, map12, INTER_LINEAR);
@@ -253,11 +253,11 @@ int StereoMatching::Matching(
 	if (!no_display)
 	{
 		namedWindow("left", 1);
-		imshow("left", img1);
+		cv::imshow("left", img1);
 		namedWindow("right", 1);
-		imshow("right", img2);
+		cv::imshow("right", img2);
 		namedWindow("disparity", 0);
-		imshow("disparity", disp8);
+		cv::imshow("disparity", disp8);
 		printf("press any key to continue...");
 		fflush(stdout);
 		waitKey();
@@ -347,7 +347,7 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 				drawChessboardCorners(cimg, boardSize, corners, found);
 				double sf = 640. / MAX(img.rows, img.cols);
 				resize(cimg, cimg1, Size(), sf, sf);
-				imshow("corners", cimg1);
+				cv::imshow("corners", cimg1);
 				char c = (char)waitKey(500);
 				if (c == 27 || c == 'q' || c == 'Q') //Allow ESC to quit
 					exit(-1);
@@ -449,57 +449,57 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 		0);
 	cout << "done with RMS error=" << rms << endl;
 
-	// òcÇ›ï‚ê≥(L, R)
-	for (int i = 0; i < 1; i++) {
-		vector<Mat> undistImgL, undistImgR;
-		undistImgL.push_back(Mat(imageSize, CV_8UC1));
-		undistImgR.push_back(Mat(imageSize, CV_8UC1));
-		undistort(imread(imagelist[0], 0), undistImgL[i], cameraMatrix[0], distCoeffs[0]);
-		undistort(imread(imagelist[1], 0), undistImgR[i], cameraMatrix[1], distCoeffs[1]);
-		imshow("0", undistImgL[0]);
-		imshow("1", undistImgR[0]);
-		waitKey();
-	}
+	//// òcÇ›ï‚ê≥(L, R)
+	//for (int i = 0; i < 1; i++) {
+	//	vector<Mat> undistImgL, undistImgR;
+	//	undistImgL.push_back(Mat(imageSize, CV_8UC1));
+	//	undistImgR.push_back(Mat(imageSize, CV_8UC1));
+	//	undistort(imread(imagelist[0], 0), undistImgL[i], cameraMatrix[0], distCoeffs[0]);
+	//	undistort(imread(imagelist[1], 0), undistImgR[i], cameraMatrix[1], distCoeffs[1]);
+	//	imshow("0", undistImgL[0]);
+	//	imshow("1", undistImgR[0]);
+	//	waitKey();
+	//}
 
-	cameraMatrix[0].at<double>(0, 0) = 393;
-	cameraMatrix[0].at<double>(0, 1) = 0;
-	cameraMatrix[0].at<double>(0, 2) = 153;
-	cameraMatrix[0].at<double>(1, 0) = 0;
-	cameraMatrix[0].at<double>(1, 1) = 392;
-	cameraMatrix[0].at<double>(1, 2) = 120;
-	cameraMatrix[0].at<double>(2, 0) = 0;
-	cameraMatrix[0].at<double>(2, 1) = 0;
-	cameraMatrix[0].at<double>(2, 2) = 1;
-	cameraMatrix[1].at<double>(0, 0) = 393;
-	cameraMatrix[1].at<double>(0, 1) = 0;
-	cameraMatrix[1].at<double>(0, 2) = 153;
-	cameraMatrix[1].at<double>(1, 0) = 0;
-	cameraMatrix[1].at<double>(1, 1) = 392;
-	cameraMatrix[1].at<double>(1, 2) = 120;
-	cameraMatrix[1].at<double>(2, 0) = 0;
-	cameraMatrix[1].at<double>(2, 1) = 0;
-	cameraMatrix[1].at<double>(2, 2) = 1;
+	//cameraMatrix[0].at<double>(0, 0) = 393;
+	//cameraMatrix[0].at<double>(0, 1) = 0;
+	//cameraMatrix[0].at<double>(0, 2) = 153;
+	//cameraMatrix[0].at<double>(1, 0) = 0;
+	//cameraMatrix[0].at<double>(1, 1) = 392;
+	//cameraMatrix[0].at<double>(1, 2) = 120;
+	//cameraMatrix[0].at<double>(2, 0) = 0;
+	//cameraMatrix[0].at<double>(2, 1) = 0;
+	//cameraMatrix[0].at<double>(2, 2) = 1;
+	//cameraMatrix[1].at<double>(0, 0) = 393;
+	//cameraMatrix[1].at<double>(0, 1) = 0;
+	//cameraMatrix[1].at<double>(0, 2) = 153;
+	//cameraMatrix[1].at<double>(1, 0) = 0;
+	//cameraMatrix[1].at<double>(1, 1) = 392;
+	//cameraMatrix[1].at<double>(1, 2) = 120;
+	//cameraMatrix[1].at<double>(2, 0) = 0;
+	//cameraMatrix[1].at<double>(2, 1) = 0;
+	//cameraMatrix[1].at<double>(2, 2) = 1;
 
-	distCoeffs[0].at<double>(0, 0) = -0.393;
-	distCoeffs[0].at<double>(0, 1) = 0.273;
-	distCoeffs[0].at<double>(0, 2) = -0.000508;
-	distCoeffs[0].at<double>(0, 3) = -0.000023;
-	distCoeffs[1].at<double>(0, 0) = -0.393;
-	distCoeffs[1].at<double>(0, 1) = 0.273;
-	distCoeffs[1].at<double>(0, 2) = -0.000508;
-	distCoeffs[1].at<double>(0, 3) = -0.000023;
+	//distCoeffs[0].at<double>(0, 0) = -0.393;
+	//distCoeffs[0].at<double>(0, 1) = 0.273;
+	//distCoeffs[0].at<double>(0, 2) = -0.000508;
+	//distCoeffs[0].at<double>(0, 3) = -0.000023;
+	//distCoeffs[1].at<double>(0, 0) = -0.393;
+	//distCoeffs[1].at<double>(0, 1) = 0.273;
+	//distCoeffs[1].at<double>(0, 2) = -0.000508;
+	//distCoeffs[1].at<double>(0, 3) = -0.000023;
 
-	// òcÇ›ï‚ê≥(L, R)
-	for (int i = 0; i < 1; i++) {
-		vector<Mat> undistImgL, undistImgR;
-		undistImgL.push_back(Mat(imageSize, CV_8UC1));
-		undistImgR.push_back(Mat(imageSize, CV_8UC1));
-		undistort(imread(imagelist[0], 0), undistImgL[i], cameraMatrix[0], distCoeffs[0]);
-		undistort(imread(imagelist[1], 0), undistImgR[i], cameraMatrix[1], distCoeffs[1]);
-		imshow("0", undistImgL[0]);
-		imshow("1", undistImgR[0]);
-		waitKey();
-	}
+	//// òcÇ›ï‚ê≥(L, R)
+	//for (int i = 0; i < 1; i++) {
+	//	vector<Mat> undistImgL, undistImgR;
+	//	undistImgL.push_back(Mat(imageSize, CV_8UC1));
+	//	undistImgR.push_back(Mat(imageSize, CV_8UC1));
+	//	undistort(imread(imagelist[0], 0), undistImgL[i], cameraMatrix[0], distCoeffs[0]);
+	//	undistort(imread(imagelist[1], 0), undistImgR[i], cameraMatrix[1], distCoeffs[1]);
+	//	imshow("0", undistImgL[0]);
+	//	imshow("1", undistImgR[0]);
+	//	waitKey();
+	//}
 
 
 	// CALIBRATION QUALITY CHECK
@@ -544,13 +544,27 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 		cout << "Error: can not save the intrinsic parameters\n";
 
 
+	FileStorage fs2("leftcamera.xml", FileStorage::READ);
+	if (fs2.isOpened())
+	{
+		fs2["intrinsic"] >> cameraMatrix[0];
+		fs2["distortion"] >> distCoeffs[0];
+		fs2.release();
+	}
 
+	FileStorage fs3("rightcamera.xml", FileStorage::READ);
+	if (fs3.isOpened())
+	{
+		fs3["intrinsic"] >> cameraMatrix[1];
+		fs3["distortion"] >> distCoeffs[1];
+		fs3.release();
+	}
 
 
 	Mat R1, R2, P1, P2, Q;
 	Rect validRoi[2];
 
-	stereoRectify(cameraMatrix[0], distCoeffs[0],
+	cv::stereoRectify(cameraMatrix[0], distCoeffs[0],
 		cameraMatrix[1], distCoeffs[1],
 		imageSize, R, T, R1, R2, P1, P2, Q,
 		CALIB_ZERO_DISPARITY, 1, imageSize, &validRoi[0], &validRoi[1]);
@@ -566,7 +580,7 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 
 	// OpenCV can handle left-right
 	// or up-down camera arrangements
-	bool isVerticalStereo = fabs(P2.at<double>(1, 3)) > fabs(P2.at<double>(0, 3));
+	bool isVerticalStereo = false;//fabs(P2.at<double>(1, 3)) > fabs(P2.at<double>(0, 3));
 
 	// COMPUTE AND DISPLAY RECTIFICATION
 	if (!showRectified)
@@ -599,10 +613,38 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 		P1 = cameraMatrix[0];
 		P2 = cameraMatrix[1];
 	}
+	/*R1.at<double>(0, 0) = 1;
+	R1.at<double>(1, 1) = 1;
+	R1.at<double>(2, 2) = 1;
+	R1.at<double>(0, 1) = 0;
+	R1.at<double>(0, 2) = 0;
+	R1.at<double>(1, 0) = 0;
+	R1.at<double>(1, 2) = 0;
+	R1.at<double>(2, 0) = 0;
+	R1.at<double>(2, 1) = 0;
+
+	R2.at<double>(0, 0) = 1;
+	R2.at<double>(1, 1) = 1;
+	R2.at<double>(2, 2) = 1;
+	R2.at<double>(0, 1) = 0;
+	R2.at<double>(0, 2) = 0;
+	R2.at<double>(1, 0) = 0;
+	R2.at<double>(1, 2) = 0;
+	R2.at<double>(2, 0) = 0;
+	R2.at<double>(2, 1) = 0;*/
+	distCoeffs[0].at<double>(0, 0) = 0;
+	distCoeffs[0].at<double>(0, 1) = 0;
+	distCoeffs[0].at<double>(0, 2) = 0;
+	distCoeffs[0].at<double>(0, 3) = 0;
+
+	distCoeffs[1].at<double>(0, 0) = 0;
+	distCoeffs[1].at<double>(0, 1) = 0;
+	distCoeffs[1].at<double>(0, 2) = 0;
+	distCoeffs[1].at<double>(0, 3) = 0;
 
 	//Precompute maps for cv::remap()
-	initUndistortRectifyMap(cameraMatrix[0], distCoeffs[0], R1, P1, imageSize, CV_16SC2, rmap[0][0], rmap[0][1]);
-	initUndistortRectifyMap(cameraMatrix[1], distCoeffs[1], R2, P2, imageSize, CV_16SC2, rmap[1][0], rmap[1][1]);
+	cv::initUndistortRectifyMap(cameraMatrix[0], distCoeffs[0], R1, P1, imageSize, CV_16SC2, rmap[0][0], rmap[0][1]);
+	cv::initUndistortRectifyMap(cameraMatrix[1], distCoeffs[1], R2, P2, imageSize, CV_16SC2, rmap[1][0], rmap[1][1]);
 
 	Mat canvas;
 	double sf;
@@ -645,7 +687,7 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 		else
 			for (j = 0; j < canvas.cols; j += 16)
 				line(canvas, Point(j, 0), Point(j, canvas.rows), Scalar(0, 255, 0), 1, 8);
-		imshow("rectified", canvas);
+		cv::imshow("rectified", canvas);
 		char c = (char)waitKey();
 		if (c == 27 || c == 'q' || c == 'Q')
 			break;
@@ -686,7 +728,7 @@ int StereoMatching::Calibrate(int boardwidth, int boardheight, string imglistfn,
 		return print_help_calib();
 	}
 
-	imagelistfn = imglistfn = "C:/stereo/FlyCap_pic/";
+	imagelistfn = imglistfn;
 
 	if (imagelistfn == "")
 	{

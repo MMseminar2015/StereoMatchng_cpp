@@ -20,11 +20,25 @@ public:
 
 public:
 	//カメラキャリブレーション実行
-	static void Calibrate();
+	static void Calibrate(bool forstereo);
 
 	// カメラキャリブレーション処理
-	static void Calibrate_FromDir(std::string imgdirpath);
-	static void StereoCalibrate(cv::Mat *intrinsic, cv::Mat *distortion);
+	static void Calibrate_FromDir(
+		std::string imgdirpath,
+		CvMat *intrinsic,
+		CvMat *rotation,
+		CvMat *translation,
+		CvMat *distortion);
+
+	static void Calibrate_FromFileNames(
+		std::vector<std::string> files,
+		std::string savefile,
+		CvMat *intrinsic,
+		CvMat *rotation,
+		CvMat *translation,
+		CvMat *distortion);
+
+	static void StereoCalibrate(std::string undimgdir);
 
 private:
 	static void Calibrate_FromDir_Prototype(std::string imgdirpath);

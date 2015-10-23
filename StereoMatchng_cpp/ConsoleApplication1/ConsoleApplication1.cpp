@@ -30,20 +30,28 @@ int main(int argc, const char* argv[])
 	//cv::imshow("red", redImg);
 	//cv::waitKey(0);
 	//cv::destroyAllWindows();
+
 	int comindex = inputcommand();
 
 	std::cout << Command[comindex] << "を実行します。" << std::endl;
 
 	StereoMatching stereo = StereoMatching();
+	std::string imgdirpath;
 	switch (comindex)
 	{
 	case 0:
-		CalibrateCamera::Calibrate();
-		break;
+		CalibrateCamera::Calibrate(true);
+	case 1:
+		CalibrateCamera::StereoCalibrate("C:\\Users\\Ohara Kazuya\\Desktop\\FlyCap_pic\\und");
 	case 2:
-		stereo.Calibrate(7, 10, "C:/stereo/FlyCap_pic/");
-		stereo.Matching("C:/stereo/data/scene1.row3.colL.png", "C:/stereo/data/scene1.row3.colR.png", "sgbm");
-		break;
+
+		std::cout << "キャリブレーション用画像が保存されているフォルダを指定してください。" << std::endl;
+		//std::cin >> imgdirpath;
+		std::cin.ignore();
+		std::getline(std::cin, imgdirpath);
+		imgdirpath = FileUtility::Replace(imgdirpath, "\"", "");
+		stereo.Calibrate(7, 10, imgdirpath);
+		//stereo.Matching("C:/stereo/data/scene1.row3.colL.png", "C:/stereo/data/scene1.row3.colR.png", "sgbm");
 	default:
 		break;
 	}
