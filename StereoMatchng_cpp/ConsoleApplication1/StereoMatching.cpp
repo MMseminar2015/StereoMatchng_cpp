@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "StereoMatching.h"
+#include "FileUtility.h"
 
 using namespace std;
 
@@ -293,8 +294,8 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 	const float squareSize = 1.f;  // Set this to your actual square size
 								   // ARRAY AND VECTOR STORAGE:
 
-	vector<vector<Point2f> > imagePoints[2];
-	vector<vector<Point3f> > objectPoints;
+	vector<vector<Point2f>> imagePoints[2];
+	vector<vector<Point3f>> objectPoints;
 	Size imageSize;
 
 	int i, j, k, nimages = (int)imagelist.size() / 2;
@@ -327,6 +328,8 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 					timg = img;
 				else
 					resize(img, timg, Size(), scale, scale);
+
+				/* チェッカーボード検出 */
 				found = findChessboardCorners(timg, boardSize, corners,
 					CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_NORMALIZE_IMAGE);
 				if (found)
@@ -339,6 +342,8 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 					break;
 				}
 			}
+
+			/* 検出されたコーナーを表示 */
 			if (displayCorners)
 			{
 				cout << filename << endl;
@@ -354,8 +359,11 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 			}
 			else
 				putchar('.');
+
+			/* チェッカーボードが検出できなかった場合次の画像ペアを処理 */
 			if (!found)
 				break;
+
 			cornerSubPix(img, corners, Size(11, 11), Size(-1, -1),
 				TermCriteria(TermCriteria::COUNT + TermCriteria::EPS,
 					30, 0.01));
@@ -436,16 +444,17 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 		cameraMatrix[1], distCoeffs[1],
 		imageSize, R, T, E, F,
 		TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 100, 1e-5),
-		//CALIB_FIX_INTRINSIC +
+		CALIB_FIX_INTRINSIC +
+		CALIB_FIX_PRINCIPAL_POINT +
 		//CALIB_FIX_ASPECT_RATIO +
 		//CALIB_ZERO_TANGENT_DIST +
 		//CALIB_USE_INTRINSIC_GUESS +
 		//CALIB_SAME_FOCAL_LENGTH +
 		//CALIB_RATIONAL_MODEL +
-		CALIB_FIX_K3 +
-		CALIB_FIX_K4 +
-		CALIB_FIX_K5 +
-		CALIB_FIX_K6 +
+		//CALIB_FIX_K3 +
+		//CALIB_FIX_K4 +
+		//CALIB_FIX_K5 +
+		//CALIB_FIX_K6 +
 		0);
 	cout << "done with RMS error=" << rms << endl;
 
@@ -533,6 +542,7 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 	cout << "average epipolar err = " << err / npoints << endl;
 
 	// save intrinsic parameters
+	// カメラパラメータと歪みをyml形式で保存
 	FileStorage fs("C:/stereo/data/intrinsics.yml", FileStorage::WRITE);
 	if (fs.isOpened())
 	{
@@ -567,7 +577,9 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 	cv::stereoRectify(cameraMatrix[0], distCoeffs[0],
 		cameraMatrix[1], distCoeffs[1],
 		imageSize, R, T, R1, R2, P1, P2, Q,
-		CALIB_ZERO_DISPARITY, 1, imageSize, &validRoi[0], &validRoi[1]);
+		CALIB_ZERO_DISPARITY
+		+ 0,
+		1, imageSize, &validRoi[0], &validRoi[1]);
 
 	fs.open("extrinsics.yml", FileStorage::WRITE);
 	if (fs.isOpened())
@@ -632,15 +644,15 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 	R2.at<double>(1, 2) = 0;
 	R2.at<double>(2, 0) = 0;
 	R2.at<double>(2, 1) = 0;*/
-	distCoeffs[0].at<double>(0, 0) = 0;
-	distCoeffs[0].at<double>(0, 1) = 0;
-	distCoeffs[0].at<double>(0, 2) = 0;
-	distCoeffs[0].at<double>(0, 3) = 0;
+	//distCoeffs[0].at<double>(0, 0) = 0;
+	//distCoeffs[0].at<double>(0, 1) = 0;
+	//distCoeffs[0].at<double>(0, 2) = 0;
+	//distCoeffs[0].at<double>(0, 3) = 0;
 
-	distCoeffs[1].at<double>(0, 0) = 0;
-	distCoeffs[1].at<double>(0, 1) = 0;
-	distCoeffs[1].at<double>(0, 2) = 0;
-	distCoeffs[1].at<double>(0, 3) = 0;
+	//distCoeffs[1].at<double>(0, 0) = 0;
+	//distCoeffs[1].at<double>(0, 1) = 0;
+	//distCoeffs[1].at<double>(0, 2) = 0;
+	//distCoeffs[1].at<double>(0, 3) = 0;
 
 	//Precompute maps for cv::remap()
 	cv::initUndistortRectifyMap(cameraMatrix[0], distCoeffs[0], R1, P1, imageSize, CV_16SC2, rmap[0][0], rmap[0][1]);
@@ -709,45 +721,22 @@ static bool readStringList(const string& filename, vector<string>& l)
 	return true;
 }
 
-int StereoMatching::Calibrate(int boardwidth, int boardheight, string imglistfn, bool showRectified) {
+int StereoMatching::Calibrate(int boardwidth, int boardheight, string imagelistfn, bool displayCorners, bool useCalibrated, bool showRectified) {
 
 	Size boardSize;
-	string imagelistfn;
 
-	boardSize.width = boardwidth;
-	if (boardSize.width <= 0)
+	if (boardwidth <= 0 || boardheight <= 0)
 	{
-		cout << "invalid board width" << endl;
+		cout << "invalid board width and height" << endl;
 		return print_help_calib();
 	}
 
-	boardSize.height = boardheight;
-	if (boardSize.height <= 0)
-	{
-		cout << "invalid board height" << endl;
-		return print_help_calib();
-	}
-
-	imagelistfn = imglistfn;
-
-	if (imagelistfn == "")
-	{
-		imagelistfn = "C:/stereo/data/stereo_calib.xml";
-		boardSize = Size(10, 7);
-	}
-	else if (boardSize.width <= 0 || boardSize.height <= 0)
-	{
-		cout << "if you specified XML file with chessboards, you should also specify the board width and height (-w and -h options)" << endl;
-		return 0;
-	}
+	boardSize = Size(boardwidth, boardheight);
 
 	vector<string> imagelist;
-	try {
-		imagelist = Directory::GetListFiles(imglistfn, "*.bmp");
-	}
-	catch (Exception e) {
-		cout << e.msg << endl;
-	}
+	imagelist = FileUtility::GetFilesFromDirectory(imagelistfn, "*.bmp");
+	if (imagelist.size() < 1)
+		cout << "invalid filepath" << endl;
 
 	StereoCalibrate(imagelist, boardSize, false, false, showRectified);
 	return 0;
