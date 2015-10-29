@@ -30,4 +30,3 @@ public:
 	static void StereoCalibrate(const vector<string>& imagelist, Size boardSize, bool displayCorners = false, bool useCalibrated = true, bool showRectified = true);
 	static int Calibrate(int boardwidth, int boardheight, string imglistfn, bool displayCorners = false, bool useCalibrated = false, bool showRectified = true);
 };
-

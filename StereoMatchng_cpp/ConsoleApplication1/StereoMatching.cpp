@@ -1,6 +1,7 @@
 #include "stdafx.h"
 #include "StereoMatching.h"
 #include "FileUtility.h"
+#include "CalibrateCamera.h"
 
 using namespace std;
 
@@ -284,6 +285,9 @@ int StereoMatching::Matching(
 
 void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size boardSize, bool displayCorners, bool useCalibrated, bool showRectified)
 {
+	//
+	// 画像読み込み, チェッカーボード検出
+	//
 	if (imagelist.size() % 2 != 0)
 	{
 		cout << "Error: the image list contains odd (non-even) number of elements\n";
@@ -291,7 +295,7 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 	}
 
 	const int maxScale = 2;
-	const float squareSize = 1.f;  // Set this to your actual square size
+	const float squareSize = 1.68f;  // Set this to your actual square size
 								   // ARRAY AND VECTOR STORAGE:
 
 	vector<vector<Point2f>> imagePoints[2];
@@ -383,6 +387,10 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 		return;
 	}
 
+
+	//
+	// objectPoints検出
+	//
 	imagePoints[0].resize(nimages);
 	imagePoints[1].resize(nimages);
 	objectPoints.resize(nimages);
@@ -433,6 +441,20 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 
 	Mat R, T, E, F;
 
+	vector<string> left, right;
+	for (int i = 0; i < goodImageList.size(); i += 2) {
+		left.push_back(goodImageList[i]);
+		right.push_back(goodImageList[i + 1]);
+	}
+
+	CvMat *intrisic[2] = { cvCreateMat(3, 3, CV_32FC1), cvCreateMat(3, 3, CV_32FC1) }, *dist[2] = { cvCreateMat(1, 4, CV_32FC1),cvCreateMat(1, 4, CV_32FC1)}, *kn= cvCreateMat(1, 3, CV_32FC1), *ln=cvCreateMat(1, 3, CV_32FC1);
+	for (int i = 0; i < 2; i++) {
+		string filename = "camera";
+		filename += i + ".xml";
+		CalibrateCamera::Calibrate_FromFileNames(left, filename, intrisic[i], kn, ln, dist[i]);
+		cameraMatrix[i] = intrisic[i];
+		distCoeffs[i] = dist[i];
+	}
 
 	//
 	// このメソッドが不具合起きてる
@@ -445,10 +467,10 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 		imageSize, R, T, E, F,
 		TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 100, 1e-5),
 		CALIB_FIX_INTRINSIC +
-		CALIB_FIX_PRINCIPAL_POINT +
+		//CALIB_FIX_PRINCIPAL_POINT +
 		//CALIB_FIX_ASPECT_RATIO +
 		//CALIB_ZERO_TANGENT_DIST +
-		//CALIB_USE_INTRINSIC_GUESS +
+		CALIB_USE_INTRINSIC_GUESS +
 		//CALIB_SAME_FOCAL_LENGTH +
 		//CALIB_RATIONAL_MODEL +
 		//CALIB_FIX_K3 +
@@ -457,6 +479,7 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 		//CALIB_FIX_K6 +
 		0);
 	cout << "done with RMS error=" << rms << endl;
+
 
 	//// 歪み補正(L, R)
 	//for (int i = 0; i < 1; i++) {
@@ -734,11 +757,21 @@ int StereoMatching::Calibrate(int boardwidth, int boardheight, string imagelistf
 	boardSize = Size(boardwidth, boardheight);
 
 	vector<string> imagelist;
-	imagelist = FileUtility::GetFilesFromDirectory(imagelistfn, "*.bmp");
+	imagelist = FileUtility::GetFilesFromDirectory(imagelistfn, "*.jpg");
 	if (imagelist.size() < 1)
 		cout << "invalid filepath" << endl;
 
-	StereoCalibrate(imagelist, boardSize, false, false, showRectified);
+	vector<string> newimagelist;
+	newimagelist.resize(imagelist.size());
+	for (int i = 0; i < imagelist.size(); i++) {
+		if (i < imagelist.size() / 2)
+			newimagelist[2 * i] = imagelist[i];
+		else
+			newimagelist[2 * (i - imagelist.size() / 2) + 1] = imagelist[i];
+	}
+	imagelist = newimagelist;
+
+	StereoCalibrate(imagelist, boardSize, displayCorners, useCalibrated, showRectified);
 	return 0;
 
 }

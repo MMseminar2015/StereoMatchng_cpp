@@ -49,7 +49,7 @@ int main(int argc, const char* argv[])
 		std::cin.ignore();
 		std::getline(std::cin, imgdirpath);
 		imgdirpath = FileUtility::Replace(imgdirpath, "\"", "");
-		StereoMatching::Calibrate(7, 10, imgdirpath, false, true);
+		StereoMatching::Calibrate(6, 8, imgdirpath, false, true);
 		//StereoMatching::Matching("C:/stereo/data/scene1.row3.colL.png", "C:/stereo/data/scene1.row3.colR.png", "sgbm");
 	default:
 		break;
