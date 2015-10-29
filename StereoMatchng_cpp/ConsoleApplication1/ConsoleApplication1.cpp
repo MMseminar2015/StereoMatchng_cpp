@@ -49,8 +49,8 @@ int main(int argc, const char* argv[])
 		std::cin.ignore();
 		std::getline(std::cin, imgdirpath);
 		imgdirpath = FileUtility::Replace(imgdirpath, "\"", "");
-		StereoMatching::Calibrate(6, 8, imgdirpath, false, true);
-		//StereoMatching::Matching("C:/stereo/data/scene1.row3.colL.png", "C:/stereo/data/scene1.row3.colR.png", "sgbm");
+		//StereoMatching::Calibrate(6, 8, imgdirpath, false, true);
+		StereoMatching::Matching("C:\Octave\Octave-4.0.0\m\FlyCap_pic_1029_2\stereo\rectify_toolbox_1029\left_rectified00.bmp", "C:\Octave\Octave-4.0.0\m\FlyCap_pic_1029_2\stereo\rectify_toolbox_1029\right_rectified00.bmp", "sgbm");
 	default:
 		break;
 	}
