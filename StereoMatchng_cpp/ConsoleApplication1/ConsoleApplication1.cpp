@@ -35,7 +35,6 @@ int main(int argc, const char* argv[])
 
 	std::cout << Command[comindex] << "‚ğÀs‚µ‚Ü‚·B" << std::endl;
 
-	StereoMatching stereo = StereoMatching();
 	std::string imgdirpath;
 	switch (comindex)
 	{
@@ -50,8 +49,8 @@ int main(int argc, const char* argv[])
 		std::cin.ignore();
 		std::getline(std::cin, imgdirpath);
 		imgdirpath = FileUtility::Replace(imgdirpath, "\"", "");
-		stereo.Calibrate(7, 10, imgdirpath);
-		//stereo.Matching("C:/stereo/data/scene1.row3.colL.png", "C:/stereo/data/scene1.row3.colR.png", "sgbm");
+		//StereoMatching::Calibrate(6, 8, imgdirpath, false, true);
+		StereoMatching::Matching("C:/stereo/rectify_toolbox_1029/left_rectified00.bmp", "C:/stereo/rectify_toolbox_1029/right_rectified00.bmp", "sgbm");
 	default:
 		break;
 	}
