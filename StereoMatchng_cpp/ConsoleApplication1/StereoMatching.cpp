@@ -1,5 +1,6 @@
 #include "stdafx.h"
 #include "StereoMatching.h"
+#include "CalibrateCamera.h"
 
 using namespace std;
 
@@ -22,7 +23,7 @@ static int print_help_match()
 
 static int print_help_calib()
 {
-	cout <<
+	std::cout <<
 		" Given a list of chessboard images, the number of corners (nx, ny)\n"
 		" on the chessboards, and a flag: useCalibrated for \n"
 		"   calibrated (0) or\n"
@@ -31,7 +32,7 @@ static int print_help_calib()
 		"         matrix separately) stereo. \n"
 		" Calibrate the cameras and display the\n"
 		" rectified results along with the computed disparity images.   \n" << endl;
-	cout << "Usage:\n ./stereo_calib -w board_width -h board_height [-nr /*dot not view results*/] <image list XML/YML file>\n" << endl;
+	std::cout << "Usage:\n ./stereo_calib -w board_width -h board_height [-nr /*dot not view results*/] <image list XML/YML file>\n" << endl;
 	return 0;
 }
 
@@ -285,7 +286,7 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 {
 	if (imagelist.size() % 2 != 0)
 	{
-		cout << "Error: the image list contains odd (non-even) number of elements\n";
+		std::cout << "Error: the image list contains odd (non-even) number of elements\n";
 		return;
 	}
 
@@ -315,7 +316,7 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 				imageSize = img.size();
 			else if (img.size() != imageSize)
 			{
-				cout << "The image " << filename << " has the size different from the first image size. Skipping the pair\n";
+				std::cout << "The image " << filename << " has the size different from the first image size. Skipping the pair\n";
 				break;
 			}
 			bool found = false;
@@ -341,7 +342,7 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 			}
 			if (displayCorners)
 			{
-				cout << filename << endl;
+				std::cout << filename << endl;
 				Mat cimg, cimg1;
 				cvtColor(img, cimg, COLOR_GRAY2BGR);
 				drawChessboardCorners(cimg, boardSize, corners, found);
@@ -367,11 +368,11 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 			j++;
 		}
 	}
-	cout << j << " pairs have been successfully detected.\n";
+	std::cout << j << " pairs have been successfully detected.\n";
 	nimages = j;
 	if (nimages < 2)
 	{
-		cout << "Error: too little pairs to run the calibration\n";
+		std::cout << "Error: too little pairs to run the calibration\n";
 		return;
 	}
 
@@ -386,7 +387,7 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 				objectPoints[i].push_back(Point3f(k*squareSize, j*squareSize, 0));
 	}
 
-	cout << "Running stereo calibration ...\n";
+	std::cout << "Running stereo calibration ...\n";
 
 	Mat cameraMatrix[2], distCoeffs[2];
 	cameraMatrix[0] = initCameraMatrix2D(objectPoints, imagePoints[0], imageSize, 0);
@@ -447,7 +448,7 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 		CALIB_FIX_K5 +
 		CALIB_FIX_K6 +
 		0);
-	cout << "done with RMS error=" << rms << endl;
+	std::cout << "done with RMS error=" << rms << endl;
 
 	//// ˜c‚Ý•â³(L, R)
 	//for (int i = 0; i < 1; i++) {
@@ -530,7 +531,7 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 		}
 		npoints += npt;
 	}
-	cout << "average epipolar err = " << err / npoints << endl;
+	std::cout << "average epipolar err = " << err / npoints << endl;
 
 	// save intrinsic parameters
 	FileStorage fs("C:/stereo/data/intrinsics.yml", FileStorage::WRITE);
@@ -541,7 +542,7 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 		fs.release();
 	}
 	else
-		cout << "Error: can not save the intrinsic parameters\n";
+		std::cout << "Error: can not save the intrinsic parameters\n";
 
 
 	FileStorage fs2("leftcamera.xml", FileStorage::READ);
@@ -576,7 +577,7 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 		fs.release();
 	}
 	else
-		cout << "Error: can not save the extrinsic parameters\n";
+		std::cout << "Error: can not save the extrinsic parameters\n";
 
 	// OpenCV can handle left-right
 	// or up-down camera arrangements
@@ -694,6 +695,224 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 	}
 }
 
+void StereoMatching::StereoCalibrate2(const vector<string>& imagelist, Size boardSize, bool displayCorners, bool useCalibrated, bool showRectified)
+{
+	if (imagelist.size() % 2 != 0)
+	{
+		std::cout << "Error: the image list contains odd (non-even) number of elements\n";
+		return;
+	}
+
+	const int maxScale = 2;
+	const float squareSize = 1.f;  // Set this to your actual square size
+								   // ARRAY AND VECTOR STORAGE:
+
+	vector<vector<Point2f> > imagePoints[2];
+	vector<vector<Point3f> > objectPoints;
+	Size imageSize;
+
+	int i, j, k, nimages = (int)imagelist.size() / 2;
+
+	imagePoints[0].resize(nimages);
+	imagePoints[1].resize(nimages);
+	vector<string> goodImageList;
+
+	for (i = j = 0; i < nimages; i++)
+	{
+		for (k = 0; k < 2; k++)
+		{
+			const string& filename = imagelist[i * 2 + k];
+			Mat img = imread(filename, 0);
+			if (img.empty())
+				break;
+			if (imageSize == Size())
+				imageSize = img.size();
+			else if (img.size() != imageSize)
+			{
+				std::cout << "The image " << filename << " has the size different from the first image size. Skipping the pair\n";
+				break;
+			}
+			bool found = false;
+			vector<Point2f>& corners = imagePoints[k][j];
+			for (int scale = 1; scale <= maxScale; scale++)
+			{
+				Mat timg;
+				if (scale == 1)
+					timg = img;
+				else
+					resize(img, timg, Size(), scale, scale);
+				found = findChessboardCorners(timg, boardSize, corners,
+					CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_NORMALIZE_IMAGE);
+				if (found)
+				{
+					if (scale > 1)
+					{
+						Mat cornersMat(corners);
+						cornersMat *= 1. / scale;
+					}
+					break;
+				}
+			}
+			if (displayCorners)
+			{
+				std::cout << filename << endl;
+				Mat cimg, cimg1;
+				cvtColor(img, cimg, COLOR_GRAY2BGR);
+				drawChessboardCorners(cimg, boardSize, corners, found);
+				double sf = 640. / MAX(img.rows, img.cols);
+				resize(cimg, cimg1, Size(), sf, sf);
+				cv::imshow("corners", cimg1);
+				char c = (char)waitKey(500);
+				if (c == 27 || c == 'q' || c == 'Q') //Allow ESC to quit
+					exit(-1);
+			}
+			else
+				putchar('.');
+			if (!found)
+				break;
+			cornerSubPix(img, corners, Size(11, 11), Size(-1, -1),
+				TermCriteria(TermCriteria::COUNT + TermCriteria::EPS,
+					30, 0.01));
+		}
+		if (k == 2)
+		{
+			goodImageList.push_back(imagelist[i * 2]);
+			goodImageList.push_back(imagelist[i * 2 + 1]);
+			j++;
+		}
+	}
+
+	std::vector<std::string> files[2];
+	for (int i = 0; i < imagelist.size() / 2; i++)
+	{
+		files[0].push_back(imagelist[2 * i]);
+		files[1].push_back(imagelist[2 * i + 1]);
+	}
+
+	CvMat *cameraMatrix[2], *distCoeffs[2], *rotation[2], *translation[2];
+
+	for (int i = 0; i < 2; i++) {
+		cameraMatrix[i] = cvCreateMat(3, 3, CV_32FC1);
+		rotation[i] = cvCreateMat(1, 3, CV_32FC1);
+		translation[i] = cvCreateMat(1, 3, CV_32FC1);
+		distCoeffs[i] = cvCreateMat(1, 4, CV_32FC1);
+
+		CalibrateCamera::Calibrate_FromFileNames(files[i], "camera" + to_string(i) + ".xml", cameraMatrix[i], rotation[i], translation[i], distCoeffs[i]);
+
+	}
+	
+
+	Mat R, T;
+
+
+	
+
+	// save intrinsic parameters
+	//FileStorage fs("C:/stereo/data/intrinsics.yml", FileStorage::WRITE);
+	//if (fs.isOpened())
+	//{
+	//	fs << "M1" << cameraMatrix[0] << "D1" << distCoeffs[0] <<
+	//		"M2" << cameraMatrix[1] << "D2" << distCoeffs[1];
+	//	fs.release();
+	//}
+	//else
+	//	std::cout << "Error: can not save the intrinsic parameters\n";
+
+
+	Mat R1, R2, P1, P2, Q;
+	Rect validRoi[2];
+	Mat C1(cameraMatrix[0]), C2(cameraMatrix[1]), D1(distCoeffs[0]), D2(distCoeffs[1]);
+
+	CalibrateCamera::CalcExtrinsicParams(rotation[0], translation[0], rotation[1], translation[1], &R, &T);
+
+	FileStorage fs("check.xml", FileStorage::WRITE);
+	if (fs.isOpened())
+	{
+		fs << "R" << R << "T" << T << "C1" << C1 << "C2" << C2 << "D1" << D1 << "D2" << D2;// << "Q" << Q;
+		fs.release();
+	}
+	else
+		std::cout << "Error: can not save the extrinsic parameters\n";
+
+	cv::stereoRectify(C1, D1, C2,D2,
+		imageSize, R, T, R1, R2, P1, P2, Q,
+		CALIB_ZERO_DISPARITY, 1, imageSize, &validRoi[0], &validRoi[1]);
+
+	//fs.open("extrinsics.yml", FileStorage::WRITE);
+	//if (fs.isOpened())
+	//{
+	//	fs << "R" << R << "T" << T << "R1" << R1 << "R2" << R2 << "P1" << P1 << "P2" << P2 << "Q" << Q;
+	//	fs.release();
+	//}
+	//else
+	//	std::cout << "Error: can not save the extrinsic parameters\n";
+
+	// OpenCV can handle left-right
+	// or up-down camera arrangements
+	bool isVerticalStereo = false;//fabs(P2.at<double>(1, 3)) > fabs(P2.at<double>(0, 3));
+
+								  // COMPUTE AND DISPLAY RECTIFICATION
+	if (!showRectified)
+		return;
+
+	Mat rmap[2][2];
+	// IF BY CALIBRATED (BOUGUET'S METHOD)
+	
+
+
+	//Precompute maps for cv::remap()
+	cv::initUndistortRectifyMap(C1, D1, R1, P1, imageSize, CV_16SC2, rmap[0][0], rmap[0][1]);
+	cv::initUndistortRectifyMap(C2, D2, R2, P2, imageSize, CV_16SC2, rmap[1][0], rmap[1][1]);
+
+	Mat canvas;
+	double sf;
+	int w, h;
+	if (!isVerticalStereo)
+	{
+		sf = 600. / MAX(imageSize.width, imageSize.height);
+		w = cvRound(imageSize.width*sf);
+		h = cvRound(imageSize.height*sf);
+		canvas.create(h, w * 2, CV_8UC3);
+	}
+	else
+	{
+		sf = 300. / MAX(imageSize.width, imageSize.height);
+		w = cvRound(imageSize.width*sf);
+		h = cvRound(imageSize.height*sf);
+		canvas.create(h * 2, w, CV_8UC3);
+	}
+
+	for (i = 0; i < nimages; i++)
+	{
+		for (k = 0; k < 2; k++)
+		{
+			Mat img = imread(goodImageList[i * 2 + k], 0), rimg, cimg;
+			remap(img, rimg, rmap[k][0], rmap[k][1], INTER_LINEAR);
+			cvtColor(rimg, cimg, COLOR_GRAY2BGR);
+			Mat canvasPart = !isVerticalStereo ? canvas(Rect(w*k, 0, w, h)) : canvas(Rect(0, h*k, w, h));
+			resize(cimg, canvasPart, canvasPart.size(), 0, 0, INTER_AREA);
+			if (useCalibrated)
+			{
+				Rect vroi(cvRound(validRoi[k].x*sf), cvRound(validRoi[k].y*sf),
+					cvRound(validRoi[k].width*sf), cvRound(validRoi[k].height*sf));
+				rectangle(canvasPart, vroi, Scalar(0, 0, 255), 3, 8);
+			}
+		}
+
+		if (!isVerticalStereo)
+			for (j = 0; j < canvas.rows; j += 16)
+				line(canvas, Point(0, j), Point(canvas.cols, j), Scalar(0, 255, 0), 1, 8);
+		else
+			for (j = 0; j < canvas.cols; j += 16)
+				line(canvas, Point(j, 0), Point(j, canvas.rows), Scalar(0, 255, 0), 1, 8);
+		cv::imshow("rectified", canvas);
+		char c = (char)waitKey();
+		if (c == 27 || c == 'q' || c == 'Q')
+			break;
+	}
+}
+
+
 static bool readStringList(const string& filename, vector<string>& l)
 {
 	l.resize(0);
@@ -717,14 +936,14 @@ int StereoMatching::Calibrate(int boardwidth, int boardheight, string imglistfn,
 	boardSize.width = boardwidth;
 	if (boardSize.width <= 0)
 	{
-		cout << "invalid board width" << endl;
+		std::cout << "invalid board width" << endl;
 		return print_help_calib();
 	}
 
 	boardSize.height = boardheight;
 	if (boardSize.height <= 0)
 	{
-		cout << "invalid board height" << endl;
+		std::cout << "invalid board height" << endl;
 		return print_help_calib();
 	}
 
@@ -737,7 +956,7 @@ int StereoMatching::Calibrate(int boardwidth, int boardheight, string imglistfn,
 	}
 	else if (boardSize.width <= 0 || boardSize.height <= 0)
 	{
-		cout << "if you specified XML file with chessboards, you should also specify the board width and height (-w and -h options)" << endl;
+		std::cout << "if you specified XML file with chessboards, you should also specify the board width and height (-w and -h options)" << endl;
 		return 0;
 	}
 
@@ -746,10 +965,10 @@ int StereoMatching::Calibrate(int boardwidth, int boardheight, string imglistfn,
 		imagelist = Directory::GetListFiles(imglistfn, "*.bmp");
 	}
 	catch (Exception e) {
-		cout << e.msg << endl;
+		std::cout << e.msg << endl;
 	}
 
-	StereoCalibrate(imagelist, boardSize, false, false, showRectified);
+	StereoCalibrate2(imagelist, boardSize, false, false, showRectified);
 	return 0;
 
 }

@@ -78,7 +78,8 @@ void CalibrateCamera::Calibrate_FromFileNames(
 	CvMat *intrinsic,
 	CvMat *rotation,
 	CvMat *translation,
-	CvMat *distortion)
+	CvMat *distortion,
+	int base)
 {
 	std::cout << "キャリブレーションを開始します。" << std::endl;
 
@@ -215,8 +216,7 @@ void CalibrateCamera::Calibrate_FromFileNames(
 
 	// (6)外部パラメータの推定
 	CvMat sub_image_points, sub_object_points;
-	int base = 0;
-
+	
 	std::cout << "外部パラメータ推定中..." << std::endl;
 	cvGetRows(&imagePoints, &sub_image_points, base * PAT_SIZE, (base + 1) * PAT_SIZE);
 	cvGetRows(&objectPoints, &sub_object_points, base * PAT_SIZE, (base + 1) * PAT_SIZE);
@@ -238,6 +238,72 @@ void CalibrateCamera::Calibrate_FromFileNames(
 	std::cout << "キャリブレーション終了しました。" << std::endl;
 
 }
+
+void CalibrateCamera::Calibrate_FromMat(
+	CvMat objectPoints,
+	CvMat imagePoints,
+	CvMat pointCounts,
+	CvSize imgsize,
+	std::string savefile,
+	CvMat *intrinsic,
+	CvMat *rotation,
+	CvMat *translation,
+	CvMat *distortion)
+{
+	std::cout << "キャリブレーションを開始します。" << std::endl;
+
+	
+	int  PAT_SIZE = PAT_ROW*PAT_COL;
+	
+	/*************************************/
+	/* (5)内部パラメータ，歪み係数の推定 */
+	//http://opencv.jp/opencv-2.1/cpp/camera_calibration_and_3d_reconstruction.html
+	/*************************************/
+
+	////内部パラメータ行列
+	////fx,fy:焦点距離（ピクセル単位） cx,cy:主点（通常は画像中心）スキューs=0,アスペクト比a=1と仮定
+	////[fx 0 cx]
+	////[0 fy cy]
+	////[0 0 1]
+	//intrinsic = cvCreateMat(3, 3, CV_32FC1);
+
+	////回転ベクトル
+	////ロドリゲスの回転公式参照
+	////ベクトルの方向：回転軸　ベクトルの長さ：回転量
+	//rotation = cvCreateMat(1, 3, CV_32FC1);
+
+	////並進ベクトル
+	//translation = cvCreateMat(1, 3, CV_32FC1);
+
+	////歪み係数ベクトル
+	//distortion = cvCreateMat(1, 4, CV_32FC1);
+
+	std::cout << "内部パラメータ，歪み係数推定中..." << std::endl;
+	cvCalibrateCamera2(&objectPoints, &imagePoints, &pointCounts,imgsize, intrinsic, distortion);
+
+	// (6)外部パラメータの推定
+	CvMat sub_image_points, sub_object_points;
+	int base = 0;
+
+	std::cout << "外部パラメータ推定中..." << std::endl;
+	cvGetRows(&imagePoints, &sub_image_points, base * PAT_SIZE, (base + 1) * PAT_SIZE);
+	cvGetRows(&objectPoints, &sub_object_points, base * PAT_SIZE, (base + 1) * PAT_SIZE);
+	cvFindExtrinsicCameraParams2(&sub_object_points, &sub_image_points, intrinsic, distortion, rotation, translation);
+
+	// (7)XMLファイルへの書き出し
+	CvFileStorage *fs;
+	fs = cvOpenFileStorage(savefile.c_str(), 0, CV_STORAGE_WRITE);
+	cvWrite(fs, "intrinsic", intrinsic);
+	cvWrite(fs, "rotation", rotation);
+	cvWrite(fs, "translation", translation);
+	cvWrite(fs, "distortion", distortion);
+	cvReleaseFileStorage(&fs);
+
+
+	std::cout << "キャリブレーション終了しました。" << std::endl;
+
+}
+
 
 void CalibrateCamera::Calibrate_FromDir_Prototype(std::string imgdirpath)
 {
@@ -330,8 +396,8 @@ void CalibrateCamera::Calibrate_FromDir_Prototype(std::string imgdirpath)
 	
 	CvMat intrinsic = cvMat(3, 3, CV_32FC1);
 	CvMat distortion = cvMat(1, 4, CV_32FC1);
-	CvMat rotation = cvMat(foundNum, 3, CV_64FC1);
-	CvMat translation = cvMat(foundNum, 3, CV_64FC1);
+	CvMat rotation = cvMat(foundNum, 3, CV_32FC1);
+	CvMat translation = cvMat(foundNum, 3, CV_32FC1);
 	cvCalibrateCamera2(&objectPoints, &imagePoints, &pointCounts, cv::Size(srcImg[0]->width, srcImg[0]->height), &intrinsic, &distortion, &rotation, &translation, NULL);
 
 	/**************************************************/
@@ -368,6 +434,35 @@ void CalibrateCamera::Calibrate_FromDir_Prototype(std::string imgdirpath)
 
 	std::cout << "キャリブレーション終了しました。" << std::endl;
 
+}
+
+
+void CalibrateCamera::CalcExtrinsicParams(
+	cv::Mat rotation1,
+	cv::Mat translation1,
+	cv::Mat rotation2,
+	cv::Mat translation2,
+	cv::Mat *rotation,
+	cv::Mat *translation)
+{
+	cv::Mat R1, R2, R, r;
+
+	//回転ベクトルを行列に変換
+	cv::Rodrigues(rotation1, R1);
+	cv::Rodrigues(rotation2, R2);
+	
+	R = R1*R2.t();
+	//cv::Rodrigues(R, r);
+	//*rotation = r.t();
+	*rotation = R;
+
+	//FileStorage fs("check.xml", FileStorage::WRITE);
+	//fs << "R" << R << "translation2" << translation2;
+	//fs.release();
+	
+	cv::Mat tmp = R*translation2.t();
+
+	*translation = translation1.t() - tmp;
 }
 
 using namespace cv;
