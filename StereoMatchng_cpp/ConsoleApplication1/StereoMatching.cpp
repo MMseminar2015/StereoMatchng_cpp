@@ -407,59 +407,34 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 	Mat cameraMatrix[2], distCoeffs[2];
 	cameraMatrix[0] = initCameraMatrix2D(objectPoints, imagePoints[0], imageSize, 0);
 	cameraMatrix[1] = initCameraMatrix2D(objectPoints, imagePoints[1], imageSize, 0);
-	//distCoeffs[0] = Mat(1, 5, CV_64F);
-	//distCoeffs[1] = Mat(1, 5, CV_64F);
-
-	//cameraMatrix[0].at<double>(0, 0) = 393;
-	//cameraMatrix[0].at<double>(0, 1) = 0;
-	//cameraMatrix[0].at<double>(0, 2) = 153;
-	//cameraMatrix[0].at<double>(1, 0) = 0;
-	//cameraMatrix[0].at<double>(1, 1) = 392;
-	//cameraMatrix[0].at<double>(1, 2) = 120;
-	//cameraMatrix[0].at<double>(2, 0) = 0;
-	//cameraMatrix[0].at<double>(2, 1) = 0;
-	//cameraMatrix[0].at<double>(2, 2) = 1;
-	//cameraMatrix[1].at<double>(0, 0) = 393;
-	//cameraMatrix[1].at<double>(0, 1) = 0;
-	//cameraMatrix[1].at<double>(0, 2) = 153;
-	//cameraMatrix[1].at<double>(1, 0) = 0;
-	//cameraMatrix[1].at<double>(1, 1) = 392;
-	//cameraMatrix[1].at<double>(1, 2) = 120;
-	//cameraMatrix[1].at<double>(2, 0) = 0;
-	//cameraMatrix[1].at<double>(2, 1) = 0;
-	//cameraMatrix[1].at<double>(2, 2) = 1;
-
-	//distCoeffs[0].at<double>(0, 0) = -0.393;
-	//distCoeffs[0].at<double>(0, 1) = 0.273;
-	//distCoeffs[0].at<double>(0, 2) = -0.000508;
-	//distCoeffs[0].at<double>(0, 3) = -0.000023;
-	//distCoeffs[1].at<double>(0, 0) = -0.393;
-	//distCoeffs[1].at<double>(0, 1) = 0.273;
-	//distCoeffs[1].at<double>(0, 2) = -0.000508;
-	//distCoeffs[1].at<double>(0, 3) = -0.000023;
-
 
 	Mat R, T, E, F;
 
-	vector<string> left, right;
+	//
+	// 左右のカメラの内部パラメータ計算
+	// 
+	vector<string> newimagelist[2];
 	for (int i = 0; i < goodImageList.size(); i += 2) {
-		left.push_back(goodImageList[i]);
-		right.push_back(goodImageList[i + 1]);
+		newimagelist[0].push_back(goodImageList[i]);
+		newimagelist[1].push_back(goodImageList[i + 1]);
 	}
 
-	CvMat *intrisic[2] = { cvCreateMat(3, 3, CV_32FC1), cvCreateMat(3, 3, CV_32FC1) }, *dist[2] = { cvCreateMat(1, 4, CV_32FC1),cvCreateMat(1, 4, CV_32FC1)}, *kn= cvCreateMat(1, 3, CV_32FC1), *ln=cvCreateMat(1, 3, CV_32FC1);
+	CvMat
+		*intrisic[2] = { cvCreateMat(3, 3, CV_32FC1), cvCreateMat(3, 3, CV_32FC1) },
+		*dist[2] = { cvCreateMat(1, 4, CV_32FC1),cvCreateMat(1, 4, CV_32FC1)},
+		*kn= cvCreateMat(1, 3, CV_32FC1), 
+		*ln=cvCreateMat(1, 3, CV_32FC1);
 	for (int i = 0; i < 2; i++) {
 		string filename = "camera";
-		filename += i + ".xml";
-		CalibrateCamera::Calibrate_FromFileNames(left, filename, intrisic[i], kn, ln, dist[i]);
+		filename += to_string(i) + ".xml";
+		CalibrateCamera::Calibrate_FromFileNames(newimagelist[i], filename, intrisic[i], kn, ln, dist[i]);
 		cameraMatrix[i] = intrisic[i];
 		distCoeffs[i] = dist[i];
 	}
 
 	//
-	// このメソッドが不具合起きてる
-	// 画像のバリエーションが少ないのかも
-	// だからここで計算しているR,T,E,Fが全部間違ってる
+	// 内部、外部パラメータの計算
+	// 初期値(cameraMatrix,distCoeffs)を与える必要あり
 	//
 	double rms = stereoCalibrate(objectPoints, imagePoints[0], imagePoints[1],
 		cameraMatrix[0], distCoeffs[0],
@@ -480,59 +455,15 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 		0);
 	cout << "done with RMS error=" << rms << endl;
 
-
-	//// 歪み補正(L, R)
-	//for (int i = 0; i < 1; i++) {
-	//	vector<Mat> undistImgL, undistImgR;
-	//	undistImgL.push_back(Mat(imageSize, CV_8UC1));
-	//	undistImgR.push_back(Mat(imageSize, CV_8UC1));
-	//	undistort(imread(imagelist[0], 0), undistImgL[i], cameraMatrix[0], distCoeffs[0]);
-	//	undistort(imread(imagelist[1], 0), undistImgR[i], cameraMatrix[1], distCoeffs[1]);
-	//	imshow("0", undistImgL[0]);
-	//	imshow("1", undistImgR[0]);
-	//	waitKey();
-	//}
-
-	//cameraMatrix[0].at<double>(0, 0) = 393;
-	//cameraMatrix[0].at<double>(0, 1) = 0;
-	//cameraMatrix[0].at<double>(0, 2) = 153;
-	//cameraMatrix[0].at<double>(1, 0) = 0;
-	//cameraMatrix[0].at<double>(1, 1) = 392;
-	//cameraMatrix[0].at<double>(1, 2) = 120;
-	//cameraMatrix[0].at<double>(2, 0) = 0;
-	//cameraMatrix[0].at<double>(2, 1) = 0;
-	//cameraMatrix[0].at<double>(2, 2) = 1;
-	//cameraMatrix[1].at<double>(0, 0) = 393;
-	//cameraMatrix[1].at<double>(0, 1) = 0;
-	//cameraMatrix[1].at<double>(0, 2) = 153;
-	//cameraMatrix[1].at<double>(1, 0) = 0;
-	//cameraMatrix[1].at<double>(1, 1) = 392;
-	//cameraMatrix[1].at<double>(1, 2) = 120;
-	//cameraMatrix[1].at<double>(2, 0) = 0;
-	//cameraMatrix[1].at<double>(2, 1) = 0;
-	//cameraMatrix[1].at<double>(2, 2) = 1;
-
-	//distCoeffs[0].at<double>(0, 0) = -0.393;
-	//distCoeffs[0].at<double>(0, 1) = 0.273;
-	//distCoeffs[0].at<double>(0, 2) = -0.000508;
-	//distCoeffs[0].at<double>(0, 3) = -0.000023;
-	//distCoeffs[1].at<double>(0, 0) = -0.393;
-	//distCoeffs[1].at<double>(0, 1) = 0.273;
-	//distCoeffs[1].at<double>(0, 2) = -0.000508;
-	//distCoeffs[1].at<double>(0, 3) = -0.000023;
-
-	//// 歪み補正(L, R)
-	//for (int i = 0; i < 1; i++) {
-	//	vector<Mat> undistImgL, undistImgR;
-	//	undistImgL.push_back(Mat(imageSize, CV_8UC1));
-	//	undistImgR.push_back(Mat(imageSize, CV_8UC1));
-	//	undistort(imread(imagelist[0], 0), undistImgL[i], cameraMatrix[0], distCoeffs[0]);
-	//	undistort(imread(imagelist[1], 0), undistImgR[i], cameraMatrix[1], distCoeffs[1]);
-	//	imshow("0", undistImgL[0]);
-	//	imshow("1", undistImgR[0]);
-	//	waitKey();
-	//}
-
+	// (7)XMLファイルへの書き出し
+	FileStorage fs("extrinsic.xml", FileStorage::WRITE);
+	if (fs.isOpened()) {
+		write(fs, "rotation", R);
+		write(fs, "translation", T);
+		write(fs, "essential", E);
+		write(fs, "fundamental", F);
+		fs.release();
+	}
 
 	// CALIBRATION QUALITY CHECK
 	// because the output fundamental matrix implicitly
@@ -566,18 +497,18 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 
 	// save intrinsic parameters
 	// カメラパラメータと歪みをyml形式で保存
-	FileStorage fs("C:/stereo/data/intrinsics.yml", FileStorage::WRITE);
-	if (fs.isOpened())
+	FileStorage fs1("intrinsics.yml", FileStorage::WRITE);
+	if (fs1.isOpened())
 	{
-		fs << "M1" << cameraMatrix[0] << "D1" << distCoeffs[0] <<
+		fs1 << "M1" << cameraMatrix[0] << "D1" << distCoeffs[0] <<
 			"M2" << cameraMatrix[1] << "D2" << distCoeffs[1];
-		fs.release();
+		fs1.release();
 	}
 	else
 		cout << "Error: can not save the intrinsic parameters\n";
 
 
-	FileStorage fs2("leftcamera.xml", FileStorage::READ);
+	FileStorage fs2("camera0.xml", FileStorage::READ);
 	if (fs2.isOpened())
 	{
 		fs2["intrinsic"] >> cameraMatrix[0];
@@ -585,12 +516,19 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 		fs2.release();
 	}
 
-	FileStorage fs3("rightcamera.xml", FileStorage::READ);
+	FileStorage fs3("camera1.xml", FileStorage::READ);
 	if (fs3.isOpened())
 	{
 		fs3["intrinsic"] >> cameraMatrix[1];
 		fs3["distortion"] >> distCoeffs[1];
 		fs3.release();
+	}
+
+	FileStorage fs4("extrinsic.xml", FileStorage::READ);
+	if (fs4.isOpened())
+	{
+		fs4["rotation"] >> R;
+		fs4["translation"] >> T;
 	}
 
 
@@ -648,34 +586,6 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 		P1 = cameraMatrix[0];
 		P2 = cameraMatrix[1];
 	}
-	/*R1.at<double>(0, 0) = 1;
-	R1.at<double>(1, 1) = 1;
-	R1.at<double>(2, 2) = 1;
-	R1.at<double>(0, 1) = 0;
-	R1.at<double>(0, 2) = 0;
-	R1.at<double>(1, 0) = 0;
-	R1.at<double>(1, 2) = 0;
-	R1.at<double>(2, 0) = 0;
-	R1.at<double>(2, 1) = 0;
-
-	R2.at<double>(0, 0) = 1;
-	R2.at<double>(1, 1) = 1;
-	R2.at<double>(2, 2) = 1;
-	R2.at<double>(0, 1) = 0;
-	R2.at<double>(0, 2) = 0;
-	R2.at<double>(1, 0) = 0;
-	R2.at<double>(1, 2) = 0;
-	R2.at<double>(2, 0) = 0;
-	R2.at<double>(2, 1) = 0;*/
-	//distCoeffs[0].at<double>(0, 0) = 0;
-	//distCoeffs[0].at<double>(0, 1) = 0;
-	//distCoeffs[0].at<double>(0, 2) = 0;
-	//distCoeffs[0].at<double>(0, 3) = 0;
-
-	//distCoeffs[1].at<double>(0, 0) = 0;
-	//distCoeffs[1].at<double>(0, 1) = 0;
-	//distCoeffs[1].at<double>(0, 2) = 0;
-	//distCoeffs[1].at<double>(0, 3) = 0;
 
 	//Precompute maps for cv::remap()
 	cv::initUndistortRectifyMap(cameraMatrix[0], distCoeffs[0], R1, P1, imageSize, CV_16SC2, rmap[0][0], rmap[0][1]);
@@ -729,22 +639,22 @@ void StereoMatching::StereoCalibrate(const vector<string>& imagelist, Size board
 	}
 }
 
-static bool readStringList(const string& filename, vector<string>& l)
-{
-	l.resize(0);
-	FileStorage fs(filename, FileStorage::READ);
-	if (!fs.isOpened())
-		return false;
-	FileNode n = fs.getFirstTopLevelNode();
-	if (n.type() != FileNode::SEQ)
-		return false;
-	FileNodeIterator it = n.begin(), it_end = n.end();
-	for (; it != it_end; ++it)
-		l.push_back((string)*it);
-	return true;
-}
+//static bool readStringList(const string& filename, vector<string>& l)
+//{
+//	l.resize(0);
+//	FileStorage fs(filename, FileStorage::READ);
+//	if (!fs.isOpened())
+//		return false;
+//	FileNode n = fs.getFirstTopLevelNode();
+//	if (n.type() != FileNode::SEQ)
+//		return false;
+//	FileNodeIterator it = n.begin(), it_end = n.end();
+//	for (; it != it_end; ++it)
+//		l.push_back((string)*it);
+//	return true;
+//}
 
-int StereoMatching::Calibrate(int boardwidth, int boardheight, string imagelistfn, bool displayCorners, bool useCalibrated, bool showRectified) {
+int StereoMatching::StereoCalibrate(int boardwidth, int boardheight, string imagelistfn, bool displayCorners, bool useCalibrated, bool showRectified) {
 
 	Size boardSize;
 
@@ -757,7 +667,7 @@ int StereoMatching::Calibrate(int boardwidth, int boardheight, string imagelistf
 	boardSize = Size(boardwidth, boardheight);
 
 	vector<string> imagelist;
-	imagelist = FileUtility::GetFilesFromDirectory(imagelistfn, "*.jpg");
+	imagelist = FileUtility::GetFilesFromDirectory(imagelistfn, "*.bmp");
 	if (imagelist.size() < 1)
 		cout << "invalid filepath" << endl;
 
@@ -769,9 +679,333 @@ int StereoMatching::Calibrate(int boardwidth, int boardheight, string imagelistf
 		else
 			newimagelist[2 * (i - imagelist.size() / 2) + 1] = imagelist[i];
 	}
-	imagelist = newimagelist;
+	//imagelist = newimagelist;
 
 	StereoCalibrate(imagelist, boardSize, displayCorners, useCalibrated, showRectified);
 	return 0;
 
+}
+
+bool StereoMatching::DetectObjectPoints(
+	Mat img, Size imgSize,
+	Size boardSize, float squareSize,
+	vector<Point3f>& objectPoint, vector<Point2f>& corners)
+{
+
+	if (img.empty())
+		return false;
+	bool found = false;
+	for (int scale = 1; scale <= 2; scale++)
+	{
+		Mat timg;
+		if (scale == 1)
+			timg = img;
+		else
+			resize(img, timg, Size(), scale, scale);
+
+		/* チェッカーボード検出 */
+		found = findChessboardCorners(timg, boardSize, corners,
+			CALIB_CB_ADAPTIVE_THRESH | CALIB_CB_NORMALIZE_IMAGE);
+		if (found)
+		{
+			if (scale > 1)
+			{
+				Mat cornersMat(corners);
+				cornersMat *= 1. / scale;
+			}
+			break;
+		}
+		else
+			return false;
+	}
+
+	cornerSubPix(img, corners, Size(11, 11), Size(-1, -1),
+		TermCriteria(TermCriteria::COUNT + TermCriteria::EPS,
+			30, 0.01));
+
+	for (int j = 0; j < boardSize.height; j++)
+		for (int k = 0; k < boardSize.width; k++)
+			objectPoint.push_back(Point3f(k*squareSize, j*squareSize, 0));
+
+	return true;
+}
+
+int StereoMatching::MonoCalibrate(
+	vector<vector<Point3f>> objectPoints, 
+	vector<vector<Point2f>> imagePoints,
+	Size imageSize,
+	Mat& cameraMatrix, Mat& distCoeffs,
+	vector<Mat>& rvecs, vector<Mat>& tvecs)
+{
+	return cv::calibrateCamera(objectPoints, imagePoints, imageSize, cameraMatrix, distCoeffs, rvecs, tvecs);
+}
+
+int StereoMatching::StereoCalibrate2() {
+
+	vector<vector<Point3f>> objectPoints[2];
+	vector<vector<Point2f>> imagePoints[2];
+	Size imageSize;
+
+	Mat img1, img2;
+
+	if (img1.size() != img2.size())
+		;
+	imageSize = img1.size();
+
+	DetectObjectPointsForStereoCamera2(
+		img1, img2, imageSize, BoardSize, 1.68, objectPoints, imagePoints);
+
+	for (int i = 0; i < 2; i++)
+	{
+		Mat rvecs, tvecs;
+		cv::calibrateCamera(objectPoints[i], imagePoints[i], imageSize, CameraMatrix[i], DistCoeffs[i], rvecs, tvecs);
+	}
+
+	double rms =
+		cv::stereoCalibrate(
+			objectPoints[0], imagePoints[0], imagePoints[1],
+			CameraMatrix[0], DistCoeffs[0],
+			CameraMatrix[1], DistCoeffs[1],
+			imageSize,
+			R, T, E, F,
+			TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 100, 1e-5),
+			CALIB_FIX_INTRINSIC +
+			//CALIB_FIX_PRINCIPAL_POINT +
+			//CALIB_FIX_ASPECT_RATIO +
+			//CALIB_ZERO_TANGENT_DIST +
+			CALIB_USE_INTRINSIC_GUESS +
+			//CALIB_SAME_FOCAL_LENGTH +
+			//CALIB_RATIONAL_MODEL +
+			//CALIB_FIX_K3 +
+			//CALIB_FIX_K4 +
+			//CALIB_FIX_K5 +
+			//CALIB_FIX_K6 +
+			0);
+
+	//double rms = stereoCalibrate(objectPoints, imagePoints[0], imagePoints[1],
+	//	cameraMatrix[0], distCoeffs[0],
+	//	cameraMatrix[1], distCoeffs[1],
+	//	imageSize, R, T, E, F,
+	//	TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 100, 1e-5),
+	//	CALIB_FIX_INTRINSIC +
+	//	//CALIB_FIX_PRINCIPAL_POINT +
+	//	//CALIB_FIX_ASPECT_RATIO +
+	//	//CALIB_ZERO_TANGENT_DIST +
+	//	CALIB_USE_INTRINSIC_GUESS +
+	//	//CALIB_SAME_FOCAL_LENGTH +
+	//	//CALIB_RATIONAL_MODEL +
+	//	//CALIB_FIX_K3 +
+	//	//CALIB_FIX_K4 +
+	//	//CALIB_FIX_K5 +
+	//	//CALIB_FIX_K6 +
+	//	0);
+	//cout << "done with RMS error=" << rms << endl;
+
+	//// (7)XMLファイルへの書き出し
+	//FileStorage fs("extrinsic.xml", FileStorage::WRITE);
+	//if (fs.isOpened()) {
+	//	write(fs, "rotation", R);
+	//	write(fs, "translation", T);
+	//	write(fs, "essential", E);
+	//	write(fs, "fundamental", F);
+	//	fs.release();
+	//}
+	return 1;
+}
+int StereoMatching::StereoCalibrate() {
+
+	// チェッカーボードコーナー検出
+	while (1) {
+		Mat img1, img2;
+		vector<Point3f> objectPoints;
+		vector<Point2f> imagePoints[2];
+		bool found =
+			DetectObjectPointsForStereoCamera(
+				img1, img2, ImageSize, BoardSize, SquareSize,
+				objectPoints, imagePoints[0], imagePoints[1]);
+		if (found) {
+			ObjectPoints.push_back(objectPoints);
+			for (int i = 0; i < 2; i++)
+				ImagePoints[i].push_back(imagePoints[i]);
+		}
+	}
+
+	// 内部、外部パラメータの計算
+	// 初期値(cameraMatrix,distCoeffs)を与える必要あり
+	double rms =
+		stereoCalibrate(
+			ObjectPoints, ImagePoints[0], ImagePoints[1],
+			CameraMatrix[0], DistCoeffs[0],
+			CameraMatrix[1], DistCoeffs[1],
+			ImageSize, R, T, E, F,
+			TermCriteria(TermCriteria::COUNT + TermCriteria::EPS, 100, 1e-5),
+			CALIB_FIX_INTRINSIC +
+			//CALIB_FIX_PRINCIPAL_POINT +
+			//CALIB_FIX_ASPECT_RATIO +
+			//CALIB_ZERO_TANGENT_DIST +
+			CALIB_USE_INTRINSIC_GUESS +
+			//CALIB_SAME_FOCAL_LENGTH +
+			//CALIB_RATIONAL_MODEL +
+			//CALIB_FIX_K3 +
+			//CALIB_FIX_K4 +
+			//CALIB_FIX_K5 +
+			//CALIB_FIX_K6 +
+			0);
+
+	cv::stereoRectify(CameraMatrix[0], DistCoeffs[0],
+		CameraMatrix[1], DistCoeffs[1],
+		ImageSize, R, T, R1, R2, P1, P2, Q,
+		CALIB_ZERO_DISPARITY
+		+ 0,
+		1, ImageSize, &ValidRoi[0], &ValidRoi[1]);
+
+	cv::initUndistortRectifyMap(CameraMatrix[0], DistCoeffs[0], R1, P1, ImageSize, CV_16SC2, Rmap[0][0], Rmap[0][1]);
+	cv::initUndistortRectifyMap(CameraMatrix[1], DistCoeffs[1], R2, P2, ImageSize, CV_16SC2, Rmap[1][0], Rmap[1][1]);
+
+}
+
+bool StereoMatching::DetectObjectPointsForStereoCamera2(
+	Mat img1, Mat img2,
+	Size imgSize,
+	Size boardSize,		// チェッカーボードのサイズ
+	float squareSize,	// チェッカーボードのスクエアサイズ
+	vector<vector<Point3f>> objectPoints[2],
+	vector<vector<Point2f>> imagePoints[2]
+	)
+{
+	if (img1.size() != img2.size())
+		return false;
+
+	bool found = true;
+
+	for (int i = 0; i < 2; i++) {
+		vector<Point3f> tempOP;
+		vector<Point2f> tempC;
+		if (DetectObjectPoints(img1, imgSize, boardSize, squareSize, tempOP, tempC)) {
+			objectPoints[i].push_back(tempOP);
+			imagePoints[i].push_back(tempC);
+		}
+		else
+			found = false;
+	}
+	// 両方の画像からチェッカーボードが検出できた場合
+	if (found)
+		;
+}
+
+bool StereoMatching::DetectObjectPointsForStereoCamera(
+	Mat img1, Mat img2,
+	Size imgSize,
+	Size boardSize,		// チェッカーボードのサイズ
+	float squareSize,	// チェッカーボードのスクエアサイズ
+	vector<Point3f>& ObjectPoints,
+	vector<Point2f>& ImagePoints1, vector<Point2f>& ImagePoints2
+	)
+{
+	if (img1.size() != img2.size())
+		return false;
+
+	vector<Point3f> tempOP;
+	vector<Point2f> tempIP[2];
+	for (int i = 0; i < 2; i++) {
+		if (!DetectObjectPoints(img1, imgSize, boardSize, squareSize, tempOP, tempIP[i]))
+			return false;
+	}
+
+	ObjectPoints = tempOP;
+	ImagePoints1 = tempIP[0];
+	ImagePoints2 = tempIP[1];
+}
+
+int StereoMatching::StereoRectify(Mat img1, Mat img2, Mat& rimg1, Mat& rimg2) {
+
+	remap(img1, rimg1, Rmap[0][0], Rmap[0][1], INTER_LINEAR);
+	remap(img2, rimg2, Rmap[1][0], Rmap[1][1], INTER_LINEAR);
+	return 1;
+}
+
+int StereoMatching::SetImageSize(Mat img) {
+	ImageSize = img.size();
+	return 1;
+}
+int StereoMatching::SetBoardSize(int boardwidth, int boardheight) {
+	if (boardwidth <= 0 || boardheight <= 0)
+		return 0;
+	BoardSize = Size(boardwidth, boardheight);
+	return 1;
+}
+
+
+bool StereoMatching::OutputExtrinsicParameter(std::string outputfile) {
+	// (7)XMLファイルへの書き出し
+	FileStorage fs(outputfile, FileStorage::WRITE);
+	if (fs.isOpened()) {
+		write(fs, "rotation", R);
+		write(fs, "translation", T);
+		write(fs, "essential", E);
+		write(fs, "fundamental", F);
+		fs.release();
+		return true;
+	}
+	return false;
+}
+bool StereoMatching::InputExtrinsicParameter(std::string inputfile) {
+	FileStorage fs(inputfile, FileStorage::READ);
+	if (fs.isOpened())
+	{
+		fs["rotation"] >> R;
+		fs["translation"] >> T;
+		fs["essential"] >> E;
+		fs["fundamental"] >> F;
+		fs.release();
+
+		cv::stereoRectify(
+			CameraMatrix[0], DistCoeffs[0],
+			CameraMatrix[1], DistCoeffs[1],
+			ImageSize, R, T,
+			R1, R2, P1, P2, Q,
+			CALIB_ZERO_DISPARITY
+			+ 0,
+			1, ImageSize, &ValidRoi[0], &ValidRoi[1]);
+
+		//Precompute maps for cv::remap()
+		cv::initUndistortRectifyMap(CameraMatrix[0], DistCoeffs[0], R1, P1, ImageSize, CV_16SC2, Rmap[0][0], Rmap[0][1]);
+		cv::initUndistortRectifyMap(CameraMatrix[1], DistCoeffs[1], R2, P2, ImageSize, CV_16SC2, Rmap[1][0], Rmap[1][1]);
+
+		return true;
+	}
+	return false;
+}
+bool StereoMatching::OutputIntrinsicParameter(std::string outputfile, Mat cameraMatrix, Mat distCoeffs) {
+	FileStorage fs(outputfile, FileStorage::WRITE);
+	if (fs.isOpened()) {
+		write(fs, "cameraMatrix", cameraMatrix);
+		write(fs, "distCoeffs", distCoeffs);
+		fs.release();
+		return true;
+	}
+	return false;
+}
+bool StereoMatching::InputIntrinsicParameter(std::string inputfile, Mat& cameraMatrix, Mat& distCoeffs) {
+	FileStorage fs(inputfile, FileStorage::READ);
+	if (fs.isOpened())
+	{
+		fs["cameraMatrix"] >> cameraMatrix;
+		fs["distCoeffs"] >> distCoeffs;
+		fs.release();
+		return true;
+	}
+	return false;
+
+}
+
+bool StereoMatching::OutputRectifyParameter(std::string outputfile, Mat rmap0, Mat rmap1) {
+	FileStorage fs(outputfile, FileStorage::WRITE);
+	if (fs.isOpened()) {
+		write(fs, "rmap0", rmap0);
+		write(fs, "rmap1", rmap1);
+		fs.release();
+		return true;
+	}
+	return false;
 }

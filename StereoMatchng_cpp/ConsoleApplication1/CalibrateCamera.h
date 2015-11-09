@@ -14,8 +14,8 @@ class CalibrateCamera
 {
 public:
 	//#define IMAGE_NUM  (25)         /* 画像数 */
-	static const int PAT_ROW = 6;     /* パターンの行数 */
-	static const int  PAT_COL = 8;   /* パターンの列数 */
+	static const int PAT_ROW = 7;     /* パターンの行数 */
+	static const int  PAT_COL = 10;   /* パターンの列数 */
 
 
 public:

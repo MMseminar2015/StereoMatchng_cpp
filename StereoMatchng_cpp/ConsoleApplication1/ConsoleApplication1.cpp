@@ -19,7 +19,10 @@ std::vector<std::string> Command
 {
 	"Calibration",		//カメラのキャリブレーション
 	"Stereo Matching",	//ステレオマッチング
-	"Adachi"
+	"Stereo Calibrate",
+	"Set StereoCameraParameter",
+	"Stereo Matching2",
+	"Exit"
 };
 
 int main(int argc, const char* argv[])
@@ -36,25 +39,55 @@ int main(int argc, const char* argv[])
 	std::cout << Command[comindex] << "を実行します。" << std::endl;
 
 	std::string imgdirpath;
-	switch (comindex)
-	{
-	case 0:
-		CalibrateCamera::Calibrate(true);
-	case 1:
-		CalibrateCamera::StereoCalibrate("C:\\Users\\Ohara Kazuya\\Desktop\\FlyCap_pic\\und");
-	case 2:
+	string stereoParamFilePath;
+	char* stereoParamFilePath_char;
+	string leftimg, rightimg;
+	while (1) {
+		switch (comindex)
+		{
+		case 0:
+			CalibrateCamera::Calibrate(true);
+		case 1:
+			CalibrateCamera::StereoCalibrate("C:\\Users\\Ohara Kazuya\\Desktop\\FlyCap_pic\\und");
 
-		std::cout << "キャリブレーション用画像が保存されているフォルダを指定してください。" << std::endl;
-		//std::cin >> imgdirpath;
-		std::cin.ignore();
-		std::getline(std::cin, imgdirpath);
-		imgdirpath = FileUtility::Replace(imgdirpath, "\"", "");
-		//StereoMatching::Calibrate(6, 8, imgdirpath, false, true);
-		StereoMatching::Matching("C:/stereo/rectify_toolbox_1029/left_rectified00.bmp", "C:/stereo/rectify_toolbox_1029/right_rectified00.bmp", "sgbm");
-	default:
-		break;
+		case 2:
+			std::cout << "キャリブレーション用画像が保存されているフォルダを指定してください。" << std::endl;
+			//std::cin >> imgdirpath;
+			std::cin.ignore();
+			std::getline(std::cin, imgdirpath);
+			imgdirpath = FileUtility::Replace(imgdirpath, "\"", "");
+			StereoMatching::StereoCalibrate(7, 10, imgdirpath, false, true);
+			//StereoMatching::Matching("C:/stereo/rectify_toolbox_1029/left_rectified00.bmp", "C:/stereo/rectify_toolbox_1029/right_rectified00.bmp", "sgbm");
+			break;
+
+		case 3:
+			std::cout << "ステレオカメラのパラメータxmlファイルを指定してください" << std::endl;
+			std::cin.ignore();
+			std::getline(std::cin, stereoParamFilePath);
+			//stereoParamFilePath_char = stereoParamFilePath.c_str();
+
+			break;
+
+		case 4:
+			std::cout << "左の画像" << std::endl;
+			std::cin.ignore();
+			std::getline(std::cin, leftimg);
+
+			std::cout << "右の画像" << std::endl;
+			std::cin.ignore();
+			std::getline(std::cin, rightimg);
+
+		//	StereoMatching::Matching(leftimg, rightimg, "sgbm", 0, 0, 1., false, stereoParamFilePath_char);
+
+			break;
+
+		case  5:
+			return 0;
+
+		default:
+			break;
+		}
 	}
-
 
 	getchar();
 	return 0;
