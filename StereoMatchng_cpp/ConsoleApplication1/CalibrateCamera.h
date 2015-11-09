@@ -36,9 +36,29 @@ public:
 		CvMat *intrinsic,
 		CvMat *rotation,
 		CvMat *translation,
-		CvMat *distortion);
+		CvMat *distortion,
+		int base = 0);
 
 	static void StereoCalibrate(std::string undimgdir);
+
+	static void CalibrateCamera::CalcExtrinsicParams(
+		cv::Mat rotation1,
+		cv::Mat translation1,
+		cv::Mat rotation2,
+		cv::Mat translation2,
+		cv::Mat *rotation,
+		cv::Mat *translation);
+	static void CalibrateCamera::Calibrate_FromMat(
+		CvMat objectPoints,
+		CvMat imagePoints,
+		CvMat pointCounts,
+		CvSize imgsize,
+		std::string savefile,
+		CvMat *intrinsic,
+		CvMat *rotation,
+		CvMat *translation,
+		CvMat *distortion);
+
 
 private:
 	static void Calibrate_FromDir_Prototype(std::string imgdirpath);
