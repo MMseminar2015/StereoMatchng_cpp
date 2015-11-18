@@ -4,6 +4,7 @@
 #include "stdafx.h"
 #include "FileUtility.h"
 #include "CalibrateCamera.h"
+#include "SCsample.h"
 #include "StereoMatching.h"
 #include <opencv2/core/core.hpp>
 #include <opencv2/highgui/highgui.hpp>
@@ -22,6 +23,7 @@ std::vector<std::string> Command
 	"Stereo Calibrate",
 	"Set StereoCameraParameter",
 	"Stereo Matching2",
+	"kkk",
 	"Exit"
 };
 
@@ -42,6 +44,11 @@ int main(int argc, const char* argv[])
 	string stereoParamFilePath;
 	char* stereoParamFilePath_char;
 	string leftimg, rightimg;
+	vector<Mat*> imglist, rimglist;
+	SCsample stereo = SCsample(7, 10, 1.68f);
+	vector<string> imagelist;
+	int a;
+	char c;
 	while (1) {
 		switch (comindex)
 		{
@@ -81,7 +88,33 @@ int main(int argc, const char* argv[])
 
 			break;
 
-		case  5:
+		case 5:
+			std::cout << "キャリブレーション用画像が保存されているフォルダを指定してください。" << std::endl;
+			//std::cin >> imgdirpath;
+			std::cin.ignore();
+			std::getline(std::cin, imgdirpath);
+			imgdirpath = FileUtility::Replace(imgdirpath, "\"", "");
+
+			imagelist = FileUtility::GetFilesFromDirectory(imgdirpath,"*.bmp");
+			
+			for (int i = 0; i < imagelist.size()/2; i++) {
+				imglist.push_back(new Mat[2]{ cv::imread(imagelist[2 * i]),cv::imread(imagelist[2 * i + 1]) });
+			}
+
+			stereo.SetImageSize(imglist[0][0]);
+			stereo.CalibrateStereoCamera(imglist, rimglist);
+
+			for (int i = 0; i < rimglist.size(); i++) {
+				cv::imshow("0", rimglist[i][0]);
+				cv::imshow("1", rimglist[i][1]);
+				c = (char)waitKey();
+			}
+			//StereoMatching::Matching("C:/stereo/rectify_toolbox_1029/left_rectified00.bmp", "C:/stereo/rectify_toolbox_1029/right_rectified00.bmp", "sgbm");
+			break;
+
+
+
+		case  6:
 			return 0;
 
 		default:

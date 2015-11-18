@@ -36,6 +36,9 @@
     <ClInclude Include="Undistort.h">
       <Filter>ヘッダー ファイル</Filter>
     </ClInclude>
+    <ClInclude Include="SCsample.h">
+      <Filter>ヘッダー ファイル</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
@@ -56,7 +59,7 @@
     <ClCompile Include="Undistort.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
-    <ClCompile Include="FlyCap.cpp">
+    <ClCompile Include="SCsample.cpp">
       <Filter>ソース ファイル</Filter>
     </ClCompile>
   </ItemGroup>
