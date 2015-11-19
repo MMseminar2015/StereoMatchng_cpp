@@ -1,7 +1,7 @@
 //// FlyCapOpenCV.cpp : コンソール アプリケーションのエントリ ポイントを定義します。
 ////
 //
-//#include "stdafx.h"
+#include "stdafx.h"
 //#include "FlyCapture2.h"
 //#include "opencv2/highgui/highgui.hpp"
 //#include <iostream>

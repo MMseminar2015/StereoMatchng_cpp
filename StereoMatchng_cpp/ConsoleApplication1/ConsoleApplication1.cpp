@@ -42,13 +42,19 @@ int main(int argc, const char* argv[])
 	string stereoParamFilePath;
 	char* stereoParamFilePath_char;
 	string leftimg, rightimg;
+
+	//StereoMatching smach = StereoMatching();
+	//string rectdir = "c:\\tmp\\und\\rect";
+	//string leftdir = rectdir + "\\0-0.png";
+	//string rightdir = rectdir + "\\0-1.png";
+
 	while (1) {
 		switch (comindex)
 		{
 		case 0:
 			CalibrateCamera::Calibrate(true);
 		case 1:
-			CalibrateCamera::StereoCalibrate("C:\\Users\\Ohara Kazuya\\Desktop\\FlyCap_pic\\und");
+			CalibrateCamera::StereoCalibrate("C:\\tmp\\und");
 
 		case 2:
 			std::cout << "キャリブレーション用画像が保存されているフォルダを指定してください。" << std::endl;
@@ -82,6 +88,8 @@ int main(int argc, const char* argv[])
 			break;
 
 		case  5:
+			//smach.Matching(leftdir, rightdir, "sgbm");
+
 			return 0;
 
 		default:

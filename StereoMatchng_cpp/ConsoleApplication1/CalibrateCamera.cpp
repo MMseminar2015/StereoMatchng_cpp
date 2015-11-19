@@ -591,6 +591,7 @@ void CalibrateCamera::StereoCalibrate(std::string undimgdir)
 	
 
 	num = 0;
+	string filepath = undimgdir + "\\rect\\";
 	while (1)
 	{
 		cv::Mat img1 = undistImgL[num];
@@ -603,6 +604,11 @@ void CalibrateCamera::StereoCalibrate(std::string undimgdir)
 			imwrite("unsdist_rectifyL.jpg", imgU1);
 			imwrite("unsdist_rectifyR.jpg", imgU2);
 		}*/
+
+		imwrite(filepath + std::to_string(num) + "-0.png", imgU1);
+		imwrite(filepath + std::to_string(num) + "-1.png", imgU2);
+		num++;
+
 		k = waitKey(0);
 		if (k == 27)
 		{
