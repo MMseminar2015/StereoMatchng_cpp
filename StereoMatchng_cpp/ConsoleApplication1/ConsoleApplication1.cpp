@@ -104,6 +104,15 @@ int main(int argc, const char* argv[])
 			stereo.SetImageSize(imglist[0][0]);
 			stereo.CalibrateStereoCamera(imglist, rimglist);
 
+			for (int i = 0; i < imglist.size(); i++) {
+				Mat rimg[2];
+				stereo.StereoRectify(imglist[i][0], imglist[i][1], rimg[0], rimg[1]);
+				cv::imshow("0o", imglist[i][0]);
+				cv::imshow("0", rimg[0]);
+				cv::imshow("1", rimg[1]);
+				c = (char)waitKey();
+			}
+
 			for (int i = 0; i < rimglist.size(); i++) {
 				cv::imshow("0", rimglist[i][0]);
 				cv::imshow("1", rimglist[i][1]);

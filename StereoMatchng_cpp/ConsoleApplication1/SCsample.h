@@ -94,7 +94,7 @@ public:
 	int StereoCalibrate2();
 	double StereoCalibrate();
 
-	int StereoRectify(Mat img1, Mat img2, Mat& rimg1, Mat& rimg2);
+	int StereoRectify(Mat &img1, Mat &img2, Mat& rimg1, Mat& rimg2);
 
 	int SetImageSize(Mat img);
 	int SetBoardSize(int boardwidth, int boardheight);
